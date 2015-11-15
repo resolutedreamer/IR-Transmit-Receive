@@ -1,3 +1,21 @@
+/////////////////////////////////////////////////////////////////////////
+//
+//	irRecvr_pr_2.c
+//
+//	Original Author:
+//	Pranjal Rastogi
+//
+// 	Contributing Authors:
+// 	Anthony Nguyen
+// 	Raymond Andrade
+//
+// 	Parameters:
+// 	argc and argv
+// 
+//	// currently no inputs
+//	// 
+//
+/////////////////////////////////////////////////////////////////////////
 #include <stdio.h>
 #include <mraa/gpio.h>
 
@@ -13,20 +31,16 @@
 #define UPPERBOUND_HIGHVALUE 45
 #define LOWERBOUND_HIGHVALUE 35
 
-
-
-main() {
+int main(int argc, char *argv[]) {
 	
 	// Initialization
 	volatile int irSig = 0 ;
-	// a stores 0 or 1 dep on what was received
-	int a[3000] ;  
+	// raw_data stores 0 or 1 dep on what was received
+	int raw_data[3000] ;  
 	// values stores the number of 0's or the number of 1's 
 	unsigned int values[1000];
 
-	volatile unsigned int i = 0; 
-	volatile unsigned int j = 0;
-	volatile unsigned int k = 0;
+	volatile unsigned int i = 0, j = 0, k = 0;
 	volatile unsigned int num_values = 0;
 	volatile unsigned int l = 0;
 	volatile unsigned int received_bit_count = 0;
@@ -45,30 +59,34 @@ main() {
 	gpio = mraa_gpio_init(4);
 	mraa_gpio_dir(gpio, MRAA_GPIO_IN);
 	
-	// Sampling 
+	// Part 1: Raw Sampling
+	// Detect the value received as either 1 or 0
+	// Store in raw_data[]
 	printf("Beginning Sample Collection\n");
     while(count < 3000 ) {
 		irSig = mraa_gpio_read(gpio);
-		a[count] = irSig ; 
-		printf("%d", a[count]);
+		raw_data[count] = irSig ; 
+		printf("%d", raw_data[count]);
 		for (j = 0 ; j < SAMPLING_RATE ; j++);
 		count++;
 	}//end while loop
 
-	// Consolidating the bits
-	printf("The first bit we received was a[0] = %u", a[0]);
-	counting_high_or_low = a[0];
+	// Part 2: Consolidating the bits
+	// Count the sequence of 1 or 0 received in a row
+	// Store in values[]
+	printf("The first bit we received was raw_data[0] = %u", raw_data[0]);
+	counting_high_or_low = raw_data[0];
 	printf("Therefore we are counting a stream of digits of: %u", counting_high_or_low);
-	if (a[0] == 0) {
+	if (raw_data[0] == 0) {
 		low_duration = 1;
 	}
-	else if (a[0] == 1) {
+	else if (raw_data[0] == 1) {
 		high_duration = 1;
 	}
 	count = 1;	
 	while( count < 3000 )
 	{
-		if ( a[count] == 0 ) 
+		if ( raw_data[count] == 0 ) 
 		{ 
 			if (counting_high_or_low == 1)
 		    {
@@ -82,7 +100,7 @@ main() {
 				low_duration++; 
 			}              
 		}
-		else if (a[count] == 1)
+		else if (raw_data[count] == 1)
 		{
 			if ( counting_high_or_low == 0 )
 			{
@@ -97,7 +115,7 @@ main() {
 			}                 
 	    }
 		else {
-			printf("a[count] error");
+			printf("raw_data[count] error");
 		}
 		count++;    
 	}/*end of while loop */
@@ -110,7 +128,9 @@ main() {
 	} 
 
 	
-	// FSM part 
+	// Part 3: Bit Decoding FSM
+	// Search values[] for sequences of preamble and 4 bits
+	// Store in all_received_bits[]
 	i = 0;
 	j = 0;
 	k = 0;
@@ -134,11 +154,11 @@ main() {
 				printf("Skipping i = %u, values[i] = %u\n", i, values[i]);
 				i++;
 			}
-			printf("Now we are at the first of the 10 values for the 5 bits.\n");
-			for(k = 1 ; k <= 5 ; k++) 
+			printf("Now we are at the first of the 8 values for the 4 bits.\n");
+			for(k = 1 ; k <= 4 ; k++)
 			{
 				printf("Constituents of the bit %u %u \n ", values[i],values[i+1]);
-				bit = -1; 
+				bit = -1;
 				if( values[i]>=LOWERBOUND_HIGHVALUE && values[i] <= UPPERBOUND_HIGHVALUE && values[i+1] >=LOWERBOUND_LOWVALUE && values[i+1] <= UPPERBOUND_LOWVALUE )
 				{
 					bit = 1;
@@ -148,7 +168,7 @@ main() {
 					bit = 0;
 				}
 				i += 2;
-				printf("bit = %d\n", bit );
+				printf("bit = %d\n", bit);
 				
 				all_received_bits[received_bit_count] = bit;
 				received_bit_count++;
@@ -161,30 +181,38 @@ main() {
 		}
 	}
 	
-	
+	// Part 4: Bit Verifier
+	// Inspect all_received_bits[]
+	// Store in TEMP
+	// if we find a total of 3 matching
+	// bit sequences (out of 5), return
 	printf("Okay, let's look at the bits we received\n");
 	i = 0;
 	j = 0;
 	int valid_sequence = 1;
-	for(i = 0; i < 25; i += 5) {
+	for(i = 0; i < 25; i += 4) {
 		printf("\nReceiving EdisonID/LEDID Unit\n");
-		for (j = 0; j < 5; j++) {
+		for (j = 0; j < 4; j++) {
 			printf("message[%u] = %d\n", j, all_received_bits[i+j]);
 			if (all_received_bits[i+j] == -1)
 			{
 				valid_sequence = 0;
 			}
 		}
-		printf("valid_sequence = %d\n", valid_sequence);
 		if (valid_sequence == 1) {
-			int edisonId[2] = {all_received_bits[i],all_received_bits[i+1]};
-			int ledId[3] = {all_received_bits[i+2],all_received_bits[i+3],all_received_bits[i+4]};
+			printf("Received a valid sequence\n");
+			int edisonId[2] = {all_received_bits[i], all_received_bits[i+1]};
+			int ledId[2] = {all_received_bits[i+2], all_received_bits[i+3]};
 			int ZZZ = edisonId[1]* 2 + edisonId[0]* 1;
-			int YYY = ledId[2] * 4+ ledId[1] * 2 + ledId[0] * 1;
+			int YYY = ledId[1] * 2 + ledId[0] * 1;
+			int QQQ =  edisonId[1]* 8 + edisonId[0]* 4 + ledId[1] * 2 + ledId[0] * 1;
 			printf("Receiving EdisonID: %d\n", ZZZ);
 			printf("Receiving LEDID: %d\n", YYY);
+			printf("Returning Value: %d\n", QQQ);
+			return QQQ;
 		}
 		else {
+			printf("Received an invalid sequence\n");
 			valid_sequence = 1;
 		}
 	}
