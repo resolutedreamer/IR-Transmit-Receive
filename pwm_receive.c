@@ -47,7 +47,6 @@ int main(int argc, char *argv[]) {
 	int bit = -1;
 	int all_received_bits[25] = {-1};
 	
-	
 	unsigned int counting_high_or_low;
 	unsigned int high_duration = 0;
 	unsigned int low_duration = 0;
@@ -74,8 +73,8 @@ int main(int argc, char *argv[]) {
 	// Part 2: Consolidating the bits
 	// Count the sequence of 1 or 0 received in a row
 	// Store in values[]
-	printf("The first bit we received was raw_data[0] = %u", raw_data[0]);
 	counting_high_or_low = raw_data[0];
+	printf("The first bit we received was raw_data[0] = %u", raw_data[0]);
 	printf("Therefore we are counting a stream of digits of: %u", counting_high_or_low);
 	if (raw_data[0] == 0) {
 		low_duration = 1;
@@ -120,13 +119,13 @@ int main(int argc, char *argv[]) {
 		count++;    
 	}/*end of while loop */
 
+
 	printf("\n");
 	num_values = i ; 
 	printf("num_values = %u\n", num_values);
 	for (i = 0 ; i < num_values; i++ ) {
 		printf("%u \n", values[i]);
-	} 
-
+	}
 	
 	// Part 3: Bit Decoding FSM
 	// Search values[] for sequences of preamble and 4 bits
@@ -139,7 +138,7 @@ int main(int argc, char *argv[]) {
 		printf("Iteration %u out of %u\n", i, num_values) ; 
 		for (j = i; j < (i+12); j++)
 		{
-			//printf("Inspecting j = %u with the if statement\n", values[j]);
+			printf("Inspecting j = %u with the if statement\n", values[j]);
 			if (values[j] < LOWERBOUND_PREAMBLE || values[j] > UPPERBOUND_PREAMBLE)  
 			{
 				printf("Did not find preamble \n" );
@@ -158,15 +157,19 @@ int main(int argc, char *argv[]) {
 			for(k = 1 ; k <= 4 ; k++)
 			{
 				printf("Constituents of the bit %u %u \n ", values[i],values[i+1]);
+				
 				bit = -1;
+				
 				if( values[i]>=LOWERBOUND_HIGHVALUE && values[i] <= UPPERBOUND_HIGHVALUE && values[i+1] >=LOWERBOUND_LOWVALUE && values[i+1] <= UPPERBOUND_LOWVALUE )
 				{
 					bit = 1;
 				}
+				
 				if( values[i]>=LOWERBOUND_LOWVALUE && values[i] <= UPPERBOUND_LOWVALUE && values[i+1] >=LOWERBOUND_HIGHVALUE && values[i+1] <= UPPERBOUND_HIGHVALUE)
 				{
 					bit = 0;
 				}
+				
 				i += 2;
 				printf("bit = %d\n", bit);
 				
@@ -184,13 +187,14 @@ int main(int argc, char *argv[]) {
 	// Part 4: Bit Verifier
 	// Inspect all_received_bits[]
 	// Store in TEMP
-	// if we find a total of 3 matching
-	// bit sequences (out of 5), return
 	printf("Okay, let's look at the bits we received\n");
 	i = 0;
 	j = 0;
+
 	int valid_sequence = 1;
-	for(i = 0; i < 25; i += 4) {
+	int location[6] = {0, 0, 0, 0, 0, 0};
+
+	for(i = 0; i < 4*6; i += 4) {
 		printf("\nReceiving EdisonID/LEDID Unit\n");
 		for (j = 0; j < 4; j++) {
 			printf("message[%u] = %d\n", j, all_received_bits[i+j]);
@@ -200,21 +204,37 @@ int main(int argc, char *argv[]) {
 			}
 		}
 		if (valid_sequence == 1) {
-			printf("Received a valid sequence\n");
-			int edisonId[2] = {all_received_bits[i], all_received_bits[i+1]};
-			int ledId[2] = {all_received_bits[i+2], all_received_bits[i+3]};
-			int ZZZ = edisonId[1]* 2 + edisonId[0]* 1;
-			int YYY = ledId[1] * 2 + ledId[0] * 1;
-			int QQQ =  edisonId[1]* 8 + edisonId[0]* 4 + ledId[1] * 2 + ledId[0] * 1;
-			printf("Receiving EdisonID: %d\n", ZZZ);
-			printf("Receiving LEDID: %d\n", YYY);
-			printf("Returning Value: %d\n", QQQ);
-			return QQQ;
+			location[i/4] =  all_received_bits[i+3]* 1 + all_received_bits[i+2]* 2 + all_received_bits[i+1] * 4 + all_received_bits[i+0] * 8;
+			// locations go from 1-16
+			printf("\ni = %d, location[i] is : %d", i, location[i/4]);
+			location[i/4] = location[i/4] + 1;
+			printf("\nReceived a location: %d\n", location[i/4]);
 		}
 		else {
 			printf("Received an invalid sequence\n");
 			valid_sequence = 1;
 		}
+	}
+	
+	for (i = 0 ; i < 6; i++ ) {
+		printf("%d \n", location[i]);
+	}
+	
+	// Part 5: Valid Sequence Verifier
+	// if we find a total of 3 matching
+	// bit sequences (out of 5), return
+	int match_counter = 0;
+	for(i = 0; i < 6; i++) {
+		for (j = 0; j < 4; j++) {
+			if (location[i] == location[j]) {
+				match_counter++;
+			}
+			if (match_counter == 4) {
+				printf("\nReturning location[i] = %d\n", location[i]);
+				return location[i];
+			}
+		}
+		match_counter = 0;
 	}
 	
 	/*

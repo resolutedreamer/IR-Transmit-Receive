@@ -21,7 +21,7 @@
 #include <mraa/pwm.h>
 
 #define PREAMBLE_DURATION 6
-#define TRANSMIT_DURATION 1
+#define TRANSMIT_DURATION 4
 
 #define PREAMBLE_DELAY 750000 // 10-11 miliseconds
 #define SHORT_DELAY 350000 // 5 miliseconds
@@ -30,6 +30,8 @@
 
 void send_preamble_sequence(int preamble_duration, mraa_pwm_context pwm, float duty) {
 	int i = 0, j = 0;
+	printf("\nSending Preamble. ");
+
 	for(i = preamble_duration; i > 0; i--){
 		
 		//equal durations
@@ -43,6 +45,7 @@ void send_preamble_sequence(int preamble_duration, mraa_pwm_context pwm, float d
 
 void send_low_bit(mraa_pwm_context pwm, float duty) {
 	int i = 0;
+	printf("0 ");
 	
 	mraa_pwm_write(pwm, duty);	// 5ms
 	for(i = SHORT_DELAY; i > 0; i--);
@@ -52,6 +55,7 @@ void send_low_bit(mraa_pwm_context pwm, float duty) {
 
 void send_high_bit(mraa_pwm_context pwm, float duty) {
 	int i = 0;
+	printf("1 ");
 	
 	mraa_pwm_write(pwm, duty);	//20 ms
 	for(i = LONG_DELAY; i > 0; i--);
@@ -69,15 +73,19 @@ void send_message_bit(int edisonID, int irEmitterID, float duty, mraa_pwm_contex
 		case 0:
 			send_low_bit(pin, duty);	// Send lsb bit 0 = LOW
 			send_low_bit(pin, duty);	// Send msb bit 1 = LOW
+			break;
 		case 1:
 			send_high_bit(pin, duty);	// Send lsb bit 0 = HIGH
 			send_low_bit(pin, duty);	// Send msb bit 1 = LOW
+			break;
 		case 2:
 			send_low_bit(pin, duty);	// Send lsb bit 0 = LOW
-			send_high_bit(pin, duty);	// Send msb bit 1 = HIGH
+			send_high_bit(pin, duty);	// Send msb bit 1 = 
+			break;
 		case 3:
 			send_high_bit(pin, duty);	// Send lsb bit 0 = HIGH
 			send_high_bit(pin, duty);	// Send msb bit 1 = HIGH
+			break;
 		default:
 			send_low_bit(pin, duty);	// Send lsb bit 0 = LOW
 			send_low_bit(pin, duty);	// Send msb bit 1 = LOW				
@@ -87,16 +95,20 @@ void send_message_bit(int edisonID, int irEmitterID, float duty, mraa_pwm_contex
 	switch (irEmitterID) {
 		case 0:
 			send_low_bit(pin, duty);	// Send lsb bit 0 = LOW
-			send_low_bit(pin, duty);	// Send msb bit 1 = LOW
+			send_low_bit(pin, duty);	// Send msb bit 1 = 
+			break;
 		case 1:
 			send_high_bit(pin, duty);	// Send lsb bit 0 = HIGH
 			send_low_bit(pin, duty);	// Send msb bit 1 = LOW
+			break;
 		case 2:
 			send_low_bit(pin, duty);	// Send lsb bit 0 = LOW
 			send_high_bit(pin, duty);	// Send msb bit 1 = HIGH
+			break;
 		case 3:
 			send_high_bit(pin, duty);	// Send lsb bit 0 = HIGH
 			send_high_bit(pin, duty);	// Send msb bit 1 = HIGH
+			break;
 		default:
 			send_low_bit(pin, duty);	// Send lsb bit 0 = LOW
 			send_low_bit(pin, duty);	// Send msb bit 1 = LOW				
@@ -141,11 +153,6 @@ int main(int argc, char *argv[]) {
 		// This will transmit IR data round-robin
 		// on a single Edison board
 		
-		send_message_bit(edisonID, 0, duty, pwm1);
-		send_message_bit(edisonID, 1, duty, pwm2);
-		send_message_bit(edisonID, 2, duty, pwm3);
-		send_message_bit(edisonID, 3, duty, pwm4);
-		/*
 		for (transmit_counter = TRANSMIT_DURATION; transmit_counter >= 0; transmit_counter--) {
 			send_message_bit(edisonID, 0, duty, pwm1);
 		}
@@ -158,7 +165,6 @@ int main(int argc, char *argv[]) {
 		for (transmit_counter = TRANSMIT_DURATION; transmit_counter >= 0 ;transmit_counter--) {
 			send_message_bit(edisonID, 3, duty, pwm4);
 		}
-		*/
 		
 	}// end while loop
 
