@@ -22,13 +22,16 @@
 
 #define PREAMBLE_DURATION 5
 //#define TRANSMIT_DURATION 4
+#define SCALING_FACTOR 5 
+#define PREAMBLE_DELAY 750000/SCALING_FACTOR // 10-11 miliseconds
 
-#define PREAMBLE_DELAY 750000 // 10-11 miliseconds
 
-#define SHORT_DELAY 350000 // 5 miliseconds
-#define LONG_DELAY 1400000 // 20 miliseconds
+#define SHORT_DELAY 350000/SCALING_FACTOR // 5 miliseconds
+#define LONG_DELAY 1400000/SCALING_FACTOR // 20 miliseconds
 
-#define MID_DELAY 1050000 // 15 miliseconds
+
+#define MID_DELAY 1050000/SCALING_FACTOR // 15 miliseconds
+
 
 mraa_pwm_context pwm1;
 mraa_pwm_context pwm2;

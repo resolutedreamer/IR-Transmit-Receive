@@ -20,7 +20,8 @@
 #include <mraa/gpio.h>
 
 // this is the rate for the "for loop" which waits
-#define SAMPLING_RATE 32000
+#define SCALING_FACTOR 5
+#define SAMPLING_RATE 30000/SCALING_FACTOR
 #define PREAMBLE_DURATION 5
 
 #define TOTAL_SAMPLES 3000
@@ -33,6 +34,19 @@
 
 #define UPPERBOUND_HIGHVALUE 45
 #define LOWERBOUND_HIGHVALUE 35
+
+#define PREAMBLE_RELAXED_DETECTION_THRESHOLD 2 
+// this  indicates how many values from among 10 that 
+//are examined can be outside the range of 15 to 25 , but still we can go ahead with preamble detection
+// For example if preamble_relaxed_detection = 1 , one value out of 10 can be 13 and still we detect preamble
+#define LOCATION_DETECTION_THRESHOLD 1
+// this indicates number of matching locations for us to conclude that we detected the location correcly
+// for example if LOCATION_DETECTION_THRESHOLD is set to 2 , then if we got 2 out of 5 locations as 13 , we
+// can conclude that location was indeed 13 
+// getting 3 out of 5 locaitons as matching is rather a stringent criterion 
+// and will result in sending a zero location to the server 
+
+
 
 int main(int argc, char *argv[]) {
 	
@@ -47,7 +61,7 @@ int main(int argc, char *argv[]) {
 	volatile unsigned int received_bit_count = 0;
 	int bit = -1;
 	int all_received_bits[25];
-	
+	int preamble_relaxed_detection ;  
 	
 	mraa_gpio_context gpio;
 	gpio = mraa_gpio_init(4);
@@ -155,18 +169,29 @@ int main(int argc, char *argv[]) {
 	unsigned int preamble_found = 1 ; 
 	printf("\nPart 3: Bit Decoding FSM\n");
 	printf("Begin Decoding\n");
+	
 	while (i < num_values)
 	{
 		printf("Iteration %u out of %u\n", i, num_values) ; 
+		preamble_relaxed_detection = 0 ;
 		for (j = i; j < ( i + PREAMBLE_DURATION*2 ); j++)
 		{
 			printf("Inspecting j = %u with the if statement\n", values[j]);
+			
 			if (values[j] < LOWERBOUND_PREAMBLE || values[j] > UPPERBOUND_PREAMBLE)  
-			{
-				printf("Did not find preamble \n" );
-				preamble_found = 0;
-				break;
-			}
+			{			
+                 if (values[j] > LOWERBOUND_PREAMBLE - 5 && values[j] < UPPERBOUND_PREAMBLE + 5 ) 
+			     {
+				     if ( preamble_relaxed_detection < PREAMBLE_RELAXED_DETECTION_THRESHOLD ) 
+				     {
+					     preamble_relaxed_detection++ ; 
+				         continue ;
+				     }
+			     }		
+				 printf("Did not find preamble \n" );
+				 preamble_found = 0;
+				 break;
+		    }
 		}
 		if (preamble_found == 1)
 		{
@@ -215,7 +240,7 @@ int main(int argc, char *argv[]) {
 	printf("\nNow we print the all_received_bits[] array.\n");
 	num_values = i ; 
 	for (i = 0 ; i < received_bit_count; i++ ) {
-		printf("all_received_bits[%u] = %u\n", i, all_received_bits[i]);
+		printf("all_received_bits[%u] = %d\n", i, all_received_bits[i]);
 	}
 
 	
@@ -278,7 +303,7 @@ int main(int argc, char *argv[]) {
 				if (location[i] == location[j]) {
 					match_counter++;
 				}
-				if (match_counter == 3) {
+				if (match_counter >= LOCATION_DETECTION_THRESHOLD && location[i] != 0 ) {
 					printf("Done Counting Matching Bits\n");
 					printf("\nReturning location[i] = %d\n", location[i]);
 					return location[i];
@@ -287,7 +312,7 @@ int main(int argc, char *argv[]) {
 			match_counter = 0;
 		}
 	}
-	
+	printf("\nReturning Zero Location");
 	printf("Not Enough Bits Matching, Return 0\n");	
 	return 0;
 }//end main
