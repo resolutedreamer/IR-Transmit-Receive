@@ -1,6 +1,6 @@
 /////////////////////////////////////////////////////////////////////////
 //
-//	irRecvr_pr_2.c
+//	pwm_receive.c
 //
 //	Original Author:
 //	Pranjal Rastogi
@@ -21,6 +21,9 @@
 
 // this is the rate for the "for loop" which waits
 #define SAMPLING_RATE 32000
+#define PREAMBLE_DURATION 5
+
+#define TOTAL_SAMPLES 3000
 
 #define UPPERBOUND_PREAMBLE 24
 #define LOWERBOUND_PREAMBLE 16
@@ -35,46 +38,54 @@ int main(int argc, char *argv[]) {
 	
 	// Initialization
 	volatile int irSig = 0 ;
-	// raw_data stores 0 or 1 dep on what was received
-	int raw_data[3000] ;  
 	// values stores the number of 0's or the number of 1's 
-	unsigned int values[1000];
+	unsigned int values[100];
 
 	volatile unsigned int i = 0, j = 0, k = 0;
 	volatile unsigned int num_values = 0;
 	volatile unsigned int l = 0;
 	volatile unsigned int received_bit_count = 0;
 	int bit = -1;
-	int all_received_bits[25] = {-1};
+	int all_received_bits[25];
 	
-	unsigned int counting_high_or_low;
-	unsigned int high_duration = 0;
-	unsigned int low_duration = 0;
-	unsigned int count = 0;
 	
-	unsigned int fsm_state = 0  ; 
-	unsigned int preamble_found = 1 ; 
 	mraa_gpio_context gpio;
 	gpio = mraa_gpio_init(4);
 	mraa_gpio_dir(gpio, MRAA_GPIO_IN);
 	
-	// Part 1: Raw Sampling
+	
+	// Part 1: Raw Data Sampling
 	// Detect the value received as either 1 or 0
 	// Store in raw_data[]
+	printf("Part 1: Raw Data Sampling\n");
 	printf("Beginning Sample Collection\n");
-    while(count < 3000 ) {
+    // raw_data stores 0 or 1 dep on what was received
+	int raw_data[TOTAL_SAMPLES] ;  
+	unsigned int samples_remaining = TOTAL_SAMPLES;
+	i = 0;
+	while(samples_remaining > 0 ) {
 		irSig = mraa_gpio_read(gpio);
-		raw_data[count] = irSig ; 
-		printf("%d", raw_data[count]);
+		raw_data[i] = irSig ; 
+		printf("%d", raw_data[i]);
 		for (j = 0 ; j < SAMPLING_RATE ; j++);
-		count++;
+		i++;
+		samples_remaining--;
 	}//end while loop
+	i = 0;
 
+
+	printf("\nSample Collection Complete\n");
+    
 	// Part 2: Consolidating the bits
 	// Count the sequence of 1 or 0 received in a row
 	// Store in values[]
-	counting_high_or_low = raw_data[0];
-	printf("The first bit we received was raw_data[0] = %u", raw_data[0]);
+
+	printf("\nPart 2: Consolidating the bits");
+	unsigned int counting_high_or_low = raw_data[0];
+	unsigned int high_duration = 0;
+	unsigned int low_duration = 0;
+
+	printf("\nThe first bit we received was raw_data[0] = %u\n", raw_data[0]);
 	printf("Therefore we are counting a stream of digits of: %u", counting_high_or_low);
 	if (raw_data[0] == 0) {
 		low_duration = 1;
@@ -82,9 +93,12 @@ int main(int argc, char *argv[]) {
 	else if (raw_data[0] == 1) {
 		high_duration = 1;
 	}
-	count = 1;	
-	while( count < 3000 )
+	int count = 1;
+	while( count < TOTAL_SAMPLES )
 	{
+		//printf("count = %d\n", count);
+		//printf("raw_data[count] = %d\n", raw_data[count]);
+			
 		if ( raw_data[count] == 0 ) 
 		{ 
 			if (counting_high_or_low == 1)
@@ -96,7 +110,8 @@ int main(int argc, char *argv[]) {
 			}
 			else
 			{
-				low_duration++; 
+				low_duration++;
+				//continue;
 			}              
 		}
 		else if (raw_data[count] == 1)
@@ -110,17 +125,20 @@ int main(int argc, char *argv[]) {
 			}
 			else
 			{
-			  high_duration++ ; 
+				high_duration++;
+				//continue;
 			}                 
 	    }
 		else {
-			printf("raw_data[count] error");
+			printf("\nraw_data[count] error\n");
+			printf("count = %d\n", count);
+			printf("raw_data[count] = %d\n", raw_data[count]);
+			
 		}
 		count++;    
 	}/*end of while loop */
 
-
-	printf("\n");
+	printf("\nNow we print the values[] array, which stores the result of what we counted.\n");
 	num_values = i ; 
 	printf("num_values = %u\n", num_values);
 	for (i = 0 ; i < num_values; i++ ) {
@@ -133,10 +151,14 @@ int main(int argc, char *argv[]) {
 	i = 0;
 	j = 0;
 	k = 0;
+	unsigned int fsm_state = 0 ; 
+	unsigned int preamble_found = 1 ; 
+	printf("\nPart 3: Bit Decoding FSM\n");
+	printf("Begin Decoding\n");
 	while (i < num_values)
 	{
 		printf("Iteration %u out of %u\n", i, num_values) ; 
-		for (j = i; j < (i+12); j++)
+		for (j = i; j < ( i + PREAMBLE_DURATION*2 ); j++)
 		{
 			printf("Inspecting j = %u with the if statement\n", values[j]);
 			if (values[j] < LOWERBOUND_PREAMBLE || values[j] > UPPERBOUND_PREAMBLE)  
@@ -148,8 +170,8 @@ int main(int argc, char *argv[]) {
 		}
 		if (preamble_found == 1)
 		{
-			printf("We found the preamble, now we need to skip 12 values.\n");
-			for(l = 0; l < 12; l ++) {
+			printf("We found the preamble, now we need to skip PREAMBLE_DURATION * 2 values.\n");
+			for(l = 0; l < PREAMBLE_DURATION * 2; l ++) {
 				printf("Skipping i = %u, values[i] = %u\n", i, values[i]);
 				i++;
 			}
@@ -184,17 +206,39 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	
+	printf("FSM Complete\n\n\n\n");
+	int messages = received_bit_count/4;
+	printf("Identified %d bits\n", received_bit_count);
+	printf("This corresponds to %d messages\n", messages);
+
+	
+	printf("\nNow we print the all_received_bits[] array.\n");
+	num_values = i ; 
+	for (i = 0 ; i < received_bit_count; i++ ) {
+		printf("all_received_bits[%u] = %u\n", i, all_received_bits[i]);
+	}
+
+	
 	// Part 4: Bit Verifier
 	// Inspect all_received_bits[]
 	// Store in TEMP
-	printf("Okay, let's look at the bits we received\n");
+	printf("\nPart 4: Bit Verifier\n");
+	printf("Begin Bit Inspection\n");
 	i = 0;
 	j = 0;
 
 	int valid_sequence = 1;
 	int location[6] = {0, 0, 0, 0, 0, 0};
-
-	for(i = 0; i < 4*6; i += 4) {
+	int messages_to_process = 0;
+	if (messages < 6) {
+		messages_to_process = messages;
+	}
+	else {
+		messages_to_process = 6;
+	}
+	// we process at most 6 messages, at minimum 0
+	
+	for(i = 0; i < messages_to_process * 4; i += 4) {
 		printf("\nReceiving EdisonID/LEDID Unit\n");
 		for (j = 0; j < 4; j++) {
 			printf("message[%u] = %d\n", j, all_received_bits[i+j]);
@@ -215,34 +259,35 @@ int main(int argc, char *argv[]) {
 			valid_sequence = 1;
 		}
 	}
-	
-	for (i = 0 ; i < 6; i++ ) {
-		printf("%d \n", location[i]);
-	}
-	
-	// Part 5: Valid Sequence Verifier
-	// if we find a total of 3 matching
-	// bit sequences (out of 5), return
-	int match_counter = 0;
-	for(i = 0; i < 6; i++) {
-		for (j = 0; j < 4; j++) {
-			if (location[i] == location[j]) {
-				match_counter++;
-			}
-			if (match_counter == 4) {
-				printf("\nReturning location[i] = %d\n", location[i]);
-				return location[i];
-			}
+
+	printf("Done Bit Inspection\n");
+	if (messages_to_process > 0) {
+		printf("Messages Correspond to Locations:\n");
+		for (i = 0 ; i < messages_to_process; i++ ) {
+			printf("%d \n", location[i]);
 		}
-		match_counter = 0;
+		
+		// Part 5: Valid Sequence Verifier
+		// if we find a total of 3 matching
+		// bit sequences (out of 5), return
+		printf("\nPart 5: Valid Sequence Verifier\n");
+		printf("Begin Counting Matching Bits\n");
+		int match_counter = 0;
+		for(i = 0; i < messages_to_process; i++) {
+			for (j = 0; j < 4; j++) {
+				if (location[i] == location[j]) {
+					match_counter++;
+				}
+				if (match_counter == 3) {
+					printf("Done Counting Matching Bits\n");
+					printf("\nReturning location[i] = %d\n", location[i]);
+					return location[i];
+				}
+			}
+			match_counter = 0;
+		}
 	}
 	
-	/*
-	// THIS PRINT WORKS DONT BREAK IT
-	for(i = 0; i < 100; i += 1) {
-		printf("all_received_bits[%u] = %d\n", i, all_received_bits[i]);
-	}
-	*/
-	
+	printf("Not Enough Bits Matching, Return 0\n");	
 	return 0;
 }//end main

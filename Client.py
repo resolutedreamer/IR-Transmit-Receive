@@ -259,7 +259,7 @@ if __name__ == '__main__':
     # ip, port = server.address  # find out what port we were given
 
     #ip = '172.17.100.218'  # the server ip #salma
-    ip = '131.179.22.148' #ray
+    ip = '131.179.22.190' #ray
     port = 12345
     PWM_Receive().start()
     PollingReady().start()
