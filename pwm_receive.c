@@ -23,6 +23,7 @@
 #define SCALING_FACTOR 5
 #define SAMPLING_RATE 30000/SCALING_FACTOR
 #define PREAMBLE_DURATION 5
+int preamble_duration = 5;
 
 #define TOTAL_SAMPLES 3000
 
@@ -50,23 +51,22 @@
 
 int main(int argc, char *argv[]) {
 	
-	// Initialization
-	volatile int irSig = 0 ;
-	// values stores the number of 0's or the number of 1's 
-	unsigned int values[100];
-
+	// Initialization	
 	volatile unsigned int i = 0, j = 0, k = 0;
 	volatile unsigned int num_values = 0;
 	volatile unsigned int l = 0;
 	volatile unsigned int received_bit_count = 0;
 	int bit = -1;
 	int all_received_bits[25];
-	int preamble_relaxed_detection ;  
+	int preamble_relaxed_detection;  
 	
 	mraa_gpio_context gpio;
 	gpio = mraa_gpio_init(4);
 	mraa_gpio_dir(gpio, MRAA_GPIO_IN);
 	
+	if (argc == 2) {
+		preamble_duration = atoi(argv[1]);
+	}
 	
 	// Part 1: Raw Data Sampling
 	// Detect the value received as either 1 or 0
@@ -76,6 +76,7 @@ int main(int argc, char *argv[]) {
     // raw_data stores 0 or 1 dep on what was received
 	int raw_data[TOTAL_SAMPLES] ;  
 	unsigned int samples_remaining = TOTAL_SAMPLES;
+	volatile int irSig = 0 ;
 	i = 0;
 	while(samples_remaining > 0 ) {
 		irSig = mraa_gpio_read(gpio);
@@ -98,6 +99,8 @@ int main(int argc, char *argv[]) {
 	unsigned int counting_high_or_low = raw_data[0];
 	unsigned int high_duration = 0;
 	unsigned int low_duration = 0;
+	// values stores the number of 0's or the number of 1's 
+	unsigned int values[100];
 
 	printf("\nThe first bit we received was raw_data[0] = %u\n", raw_data[0]);
 	printf("Therefore we are counting a stream of digits of: %u", counting_high_or_low);
@@ -174,7 +177,7 @@ int main(int argc, char *argv[]) {
 	{
 		printf("Iteration %u out of %u\n", i, num_values) ; 
 		preamble_relaxed_detection = 0 ;
-		for (j = i; j < ( i + PREAMBLE_DURATION*2 ); j++)
+		for (j = i; j < ( i + preamble_duration*2 ); j++)
 		{
 			printf("Inspecting j = %u with the if statement\n", values[j]);
 			
@@ -195,8 +198,8 @@ int main(int argc, char *argv[]) {
 		}
 		if (preamble_found == 1)
 		{
-			printf("We found the preamble, now we need to skip PREAMBLE_DURATION * 2 values.\n");
-			for(l = 0; l < PREAMBLE_DURATION * 2; l ++) {
+			printf("We found the preamble, now we need to skip preamble_duration * 2 values.\n");
+			for(l = 0; l < preamble_duration * 2; l ++) {
 				printf("Skipping i = %u, values[i] = %u\n", i, values[i]);
 				i++;
 			}

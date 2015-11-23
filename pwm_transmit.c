@@ -21,17 +21,13 @@
 #include <mraa/pwm.h>
 
 #define PREAMBLE_DURATION 5
-//#define TRANSMIT_DURATION 4
+char preamble_length = 5;
 #define SCALING_FACTOR 5 
 #define PREAMBLE_DELAY 750000/SCALING_FACTOR // 10-11 miliseconds
 
-
 #define SHORT_DELAY 350000/SCALING_FACTOR // 5 miliseconds
 #define LONG_DELAY 1400000/SCALING_FACTOR // 20 miliseconds
-
-
 #define MID_DELAY 1050000/SCALING_FACTOR // 15 miliseconds
-
 
 mraa_pwm_context pwm1;
 mraa_pwm_context pwm2;
@@ -123,6 +119,10 @@ int main(int argc, char *argv[]) {
 	if (argc == 2) {
 		edisonID = atoi(argv[1]);
 	}
+	if (argc == 3) {
+		edisonID = atoi(argv[1]);
+		preamble_length = atoi(argv[2]);
+	}
 	// This will transmit IR data on all 4 pins at once
 	// on a single Edison board
 
@@ -131,7 +131,7 @@ int main(int argc, char *argv[]) {
 	while(1) {
 		
 		// Preamble - Signals the Receiver Message Incoming
-		send_preamble_sequence(PREAMBLE_DURATION, duty);
+		send_preamble_sequence(preamble_length, duty);
 		
 		// Sending Edison Board ID # - 2 bits, MSB then LSB
 		switch (edisonID) {

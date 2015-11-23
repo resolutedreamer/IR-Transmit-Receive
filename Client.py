@@ -40,6 +40,9 @@ current_location_file_path = "current_location_update"
 ready_file_path = "Ready.txt"
 ready_message = "ready t2"
 
+preamble_length_path = "preamble_length.txt"
+pwm_receive_path = "./pwm_receive"
+
 t1_protected_zone_breach_file_path = "../t1_protected_zone_breach.txt"
 t2_protected_zone_breach_file_path = "../t2_protected_zone_breach.txt"
 
@@ -63,14 +66,18 @@ class PWM_Receive(threading.Thread):
     def run(self):
         # generate_location_thread(self):
         while True:
-            # get a random selection from the list
-            #TODO: Here make the modifications to get the actual location form IR receiver C Code
-            #current_sample = random.choice(sample_list)
-            #TODO: current_sample = <call the C-code return value>
-
             returncode = -1
+            mystring = " "
             try:
-                returnValue = subprocess.call(pwm_receive_path)
+                # Check if the file has been written into with Ready
+                with open(preamble_length_path) as f:
+                    for line in f:                        
+                        print "Preambe Length for this message: " + line + '\n'
+                        mystring  += line
+            except:
+                print "\nNo File"
+            try:
+                returnValue = subprocess.call(pwm_receive_path + mystring)
                 print "pwm_receive returned: " + str(returnValue)
             except subprocess.CalledProcessError, returncode:
                 print subprocess.CalledProcessError
