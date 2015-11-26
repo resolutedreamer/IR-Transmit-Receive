@@ -1,4 +1,4 @@
-IR Transmit Receive for Intel Edison
+IR Transmit/Receive for Intel Edison
 ======
 **Software Name** is a software for things. Short description here.
 
