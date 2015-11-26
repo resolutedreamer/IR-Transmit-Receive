@@ -41,7 +41,7 @@ void check_preamble_length() {
     unsigned char data;
     unsigned char buf[100];
     int i, n;
-    fd = open("./preamble_length.txt", O_RDWR | O_NOCTTY);
+    fd = open("/bin/IR/preamble_length.txt", O_RDWR | O_NOCTTY);
     if (fd == -1)
     {
         printf("open preamble_length.txt failed!\n");
