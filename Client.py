@@ -49,10 +49,25 @@ t2_protected_zone_breach_file_path = "../t2_protected_zone_breach.txt"
 if (sys.platform == "linux2"):
     current_location_file_path = "./current_location_update"
     pwm_receive_path = "./pwm_receive"
+    print "pwm_receive_path is: " + pwm_receive_path
 elif (sys.platform == "win32"):
     current_location_file_path = "X:/current_location_update.csv"
     pwm_receive_path = "X:/pwm_receive"
+    
+    
+print 'Number of arguments:', len(sys.argv), 'arguments.'
+print 'Argument List:', str(sys.argv)
 
+server_IP = '131.179.22.190'
+try:
+	server_IP = sys.argv[1]
+	print "server ip passed in was " + server_IP
+except:
+	print "no server ip passed in, use default"
+
+print "pwm_receive_path is: " + pwm_receive_path
+print "current_location_file_path is: " + current_location_file_path
+	
 class PWM_Receive(threading.Thread):
     def __init__(self):
         # Create the thread and run it
@@ -66,18 +81,26 @@ class PWM_Receive(threading.Thread):
     def run(self):
         # generate_location_thread(self):
         while True:
+            returnValue = ""
             returncode = -1
-            mystring = " "
+            pwm_preamble_length = ""
+            
             try:
                 # Check if the file has been written into with Ready
                 with open(preamble_length_path) as f:
                     for line in f:                        
-                        print "Preambe Length for this message: " + line + '\n'
-                        mystring  += line
+                        print "Preamble Length for this message: " + line.rstrip()
+                        pwm_preamble_length += line.rstrip()
             except:
-                print "\nNo File"
+                print "\nNo preamble_length.txt file, assume default preamble_length = 5"
+            
+            pwm_path = [pwm_receive_path]
+            if len(pwm_preamble_length) > 0:
+                pwm_path = [pwm_receive_path, pwm_preamble_length]
+            
             try:
-                returnValue = subprocess.call(pwm_receive_path + mystring)
+                print "Calling pwm_receive subprocess: " + str(pwm_path)
+                returnValue = subprocess.call(pwm_path)
                 print "pwm_receive returned: " + str(returnValue)
             except subprocess.CalledProcessError, returncode:
                 print subprocess.CalledProcessError
@@ -85,7 +108,7 @@ class PWM_Receive(threading.Thread):
                 print returncode
                 returnValue = returncode
             except:
-                print "Exception"
+                print "Exception, probably no pwm_receive installed"
 
             ## interpret returncode as edisonID + LEDID
 #            edisonID = -1
@@ -122,7 +145,7 @@ class PWM_Receive(threading.Thread):
                 f.write(ready_message)
                 f.close()
 
-            #sleep(1)
+            sleep(0.2)
 
 
 class PollingReady(threading.Thread):
@@ -266,7 +289,8 @@ if __name__ == '__main__':
     # ip, port = server.address  # find out what port we were given
 
     #ip = '172.17.100.218'  # the server ip #salma
-    ip = '131.179.22.190' #ray
+    #ip = '131.179.22.190' #ray
+    ip = server_IP
     port = 12345
     PWM_Receive().start()
     PollingReady().start()

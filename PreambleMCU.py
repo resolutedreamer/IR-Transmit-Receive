@@ -3,13 +3,13 @@ import sys
 from time import sleep
 import os.path
 
-ready_file_path = "Ready.txt"
+preamble_length_path = "preamble_length.txt"
 
 def deliver_message(threadName, delay):
     while (True):
         try:
             # Check if the file has been written into with Ready
-            with open(ready_file_path) as f:
+            with open(preamble_length_path) as f:
                 for line in f:
                     
                     print "Delivering Message: " + line + '\n'

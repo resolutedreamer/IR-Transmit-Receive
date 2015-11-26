@@ -25,13 +25,24 @@
 
 #define PREAMBLE_DUTY 50000
 #define PREAMBLE_PERIOD 100000
-#define PREAMBLE_SLEEP 100
+#define PREAMBLE_SLEEP PREAMBLE_PERIOD/1000
 
 #define MESSAGE_DUTY_LOW 20000
 #define MESSAGE_DUTY_HIGH 80000
 #define MESSAGE_PERIOD 100000
 #define MESSAGE_SLEEP MESSAGE_PERIOD/1000
 
+/* // same as pwm_transmit.c
+#define SCALING_FACTOR 5
+#define PREAMBLE_DUTY 10000000/SCALING_FACTOR
+#define PREAMBLE_PERIOD 20000000/SCALING_FACTOR
+#define PREAMBLE_SLEEP PREAMBLE_PERIOD/1000
+
+#define MESSAGE_DUTY_LOW 5000000/SCALING_FACTOR
+#define MESSAGE_DUTY_HIGH 20000000/SCALING_FACTOR
+#define MESSAGE_PERIOD 25000000/SCALING_FACTOR
+#define MESSAGE_SLEEP MESSAGE_PERIOD/1000
+*/
 
 #define BUFFER_LENGTH 9
 char host_message[BUFFER_LENGTH] = "5";
@@ -145,8 +156,8 @@ void mcu_main()
 		// pwm4 = 11 = long-short/long-short = 20-5/20-5
 
 		// First Bit
-		pwm_configure(pwm1, MESSAGE_DUTY_LOW, MESSAGE_PERIOD); // 0
-		pwm_configure(pwm2, MESSAGE_DUTY_LOW, MESSAGE_PERIOD); // 0
+		pwm_configure(pwm1, MESSAGE_DUTY_LOW, MESSAGE_PERIOD); 	// 0
+		pwm_configure(pwm2, MESSAGE_DUTY_LOW, MESSAGE_PERIOD); 	// 0
 		pwm_configure(pwm3, MESSAGE_DUTY_HIGH, MESSAGE_PERIOD); // 1
 		pwm_configure(pwm4, MESSAGE_DUTY_HIGH, MESSAGE_PERIOD); // 1
 
@@ -158,9 +169,9 @@ void mcu_main()
 		mcu_delay(MESSAGE_SLEEP);
 
 		// Second Bit
-		pwm_configure(pwm1, MESSAGE_DUTY_LOW, MESSAGE_PERIOD); // 0
+		pwm_configure(pwm1, MESSAGE_DUTY_LOW, MESSAGE_PERIOD); 	// 0
 		pwm_configure(pwm2, MESSAGE_DUTY_HIGH, MESSAGE_PERIOD); // 1
-		pwm_configure(pwm3, MESSAGE_DUTY_LOW, MESSAGE_PERIOD); // 0
+		pwm_configure(pwm3, MESSAGE_DUTY_LOW, MESSAGE_PERIOD); 	// 0
 		pwm_configure(pwm4, MESSAGE_DUTY_HIGH, MESSAGE_PERIOD); // 1
 
 		pwm_enable(pwm1);

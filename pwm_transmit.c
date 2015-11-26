@@ -19,11 +19,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <mraa/pwm.h>
+/* File control definitions */
+#include <fcntl.h> 
 
 #define PREAMBLE_DURATION 5
 char preamble_length = 5;
 #define SCALING_FACTOR 5 
-#define PREAMBLE_DELAY 750000/SCALING_FACTOR // 10-11 miliseconds
+#define PREAMBLE_DELAY 750000/SCALING_FACTOR // 10 miliseconds
 
 #define SHORT_DELAY 350000/SCALING_FACTOR // 5 miliseconds
 #define LONG_DELAY 1400000/SCALING_FACTOR // 20 miliseconds
@@ -33,6 +35,36 @@ mraa_pwm_context pwm1;
 mraa_pwm_context pwm2;
 mraa_pwm_context pwm3;
 mraa_pwm_context pwm4;
+
+void check_preamble_length() {
+	int fd;
+    unsigned char data;
+    unsigned char buf[100];
+    int i, n;
+    fd = open("./preamble_length.txt", O_RDWR | O_NOCTTY);
+    if (fd == -1)
+    {
+        printf("open preamble_length.txt failed!\n");
+        return;
+    }
+ 
+    i = 0;
+ 
+    do
+    {
+        n = read(fd, &data, 1);
+        buf[i] = data;
+        i++;
+    } while(data != '\n' && i < 100);
+ 
+    i = (i >=99? 99:i);
+    buf[i] = '\0';
+    printf("Response from preamble_length.txt: %s", buf);
+	preamble_length = buf[0];
+ 
+    close(fd);
+
+}
 
 void send_preamble_sequence(int preamble_duration, float duty) {
 	int i = 0, j = 0;
@@ -129,6 +161,8 @@ int main(int argc, char *argv[]) {
 	
 	// Continuously Transmit IR Signal when the program is running
 	while(1) {
+		
+		check_preamble_length();
 		
 		// Preamble - Signals the Receiver Message Incoming
 		send_preamble_sequence(preamble_length, duty);

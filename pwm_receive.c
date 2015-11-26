@@ -22,6 +22,7 @@
 // this is the rate for the "for loop" which waits
 #define SCALING_FACTOR 5
 #define SAMPLING_RATE 30000/SCALING_FACTOR
+#define MAX_SAMPLING_RATE 10
 #define PREAMBLE_DURATION 5
 int preamble_duration = 5;
 
@@ -61,17 +62,23 @@ int main(int argc, char *argv[]) {
 	int preamble_relaxed_detection;  
 	
 	mraa_gpio_context gpio;
-	gpio = mraa_gpio_init(4);
+	gpio = mraa_gpio_init(8); // Arduino Pin 8 is Edison Pin 49
 	mraa_gpio_dir(gpio, MRAA_GPIO_IN);
 	
+	
+	// Part 0: Determine Preamble Duration
+	// Detect the length of the preamble we expect from this message
+	// Defaults to 5, get passed in as the 1st argument to pwm_receive
+	printf("\nPart 0: Determine Preamble Duration\n");
 	if (argc == 2) {
 		preamble_duration = atoi(argv[1]);
 	}
+	printf("Preamble Length is %d", preamble_duration);
 	
 	// Part 1: Raw Data Sampling
 	// Detect the value received as either 1 or 0
 	// Store in raw_data[]
-	printf("Part 1: Raw Data Sampling\n");
+	printf("\nPart 1: Raw Data Sampling\n");
 	printf("Beginning Sample Collection\n");
     // raw_data stores 0 or 1 dep on what was received
 	int raw_data[TOTAL_SAMPLES] ;  
@@ -82,6 +89,7 @@ int main(int argc, char *argv[]) {
 		irSig = mraa_gpio_read(gpio);
 		raw_data[i] = irSig ; 
 		printf("%d", raw_data[i]);
+		//for (j = 0 ; j < MAX_SAMPLING_RATE ; j++);
 		for (j = 0 ; j < SAMPLING_RATE ; j++);
 		i++;
 		samples_remaining--;
