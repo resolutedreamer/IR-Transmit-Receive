@@ -23,8 +23,7 @@
 #define SCALING_FACTOR 5
 #define SAMPLING_RATE 30000/SCALING_FACTOR
 #define MAX_SAMPLING_RATE 10
-#define PREAMBLE_DURATION 5
-int preamble_duration = 5;
+int preamble_length = 5;
 
 #define TOTAL_SAMPLES 3000
 
@@ -41,7 +40,8 @@ int preamble_duration = 5;
 // this  indicates how many values from among 10 that 
 //are examined can be outside the range of 15 to 25 , but still we can go ahead with preamble detection
 // For example if preamble_relaxed_detection = 1 , one value out of 10 can be 13 and still we detect preamble
-#define LOCATION_DETECTION_THRESHOLD 1
+
+int location_detection_threshold = 1;
 // this indicates number of matching locations for us to conclude that we detected the location correcly
 // for example if LOCATION_DETECTION_THRESHOLD is set to 2 , then if we got 2 out of 5 locations as 13 , we
 // can conclude that location was indeed 13 
@@ -57,9 +57,6 @@ int main(int argc, char *argv[]) {
 	volatile unsigned int num_values = 0;
 	volatile unsigned int l = 0;
 	volatile unsigned int received_bit_count = 0;
-	int bit = -1;
-	int all_received_bits[25];
-	int preamble_relaxed_detection;  
 	
 	mraa_gpio_context gpio;
 	gpio = mraa_gpio_init(8); // Arduino Pin 8 is Edison Pin 49
@@ -69,16 +66,30 @@ int main(int argc, char *argv[]) {
 	// Part 0: Determine Preamble Duration
 	// Detect the length of the preamble we expect from this message
 	// Defaults to 5, get passed in as the 1st argument to pwm_receive
-	printf("\nPart 0: Determine Preamble Duration\n");
+	printf("\n---------------------pwm_receive.c---------------------\n");
+	
+	printf("\n---------------------Part 0: Determine Preamble Duration---------------------\n");
 	if (argc == 2) {
-		preamble_duration = atoi(argv[1]);
+		preamble_length = atoi(argv[1]);
+		printf("Argument(1) Passed In! Preamble Length set to: %d\n", preamble_length);
 	}
-	printf("Preamble Length is %d", preamble_duration);
+	else {
+		printf("Preamble Length set to default value: %d\n", preamble_length);
+	}
+	if (argc == 3) {
+		preamble_length = atoi(argv[1]);
+		printf("Argument(1) Passed In! Preamble Length set to: %d\n", preamble_length);
+		location_detection_threshold = atoi(argv[2]);
+		printf("Argument(2) Passed In! Location detection threshold set to: %d\n", location_detection_threshold);
+	}
+	else {
+		printf("Location detection threshold set to default value: %d\n", location_detection_threshold);
+	}
 	
 	// Part 1: Raw Data Sampling
 	// Detect the value received as either 1 or 0
 	// Store in raw_data[]
-	printf("\nPart 1: Raw Data Sampling\n");
+	printf("\n---------------------Part 1: Raw Data Sampling---------------------\n");
 	printf("Beginning Sample Collection\n");
     // raw_data stores 0 or 1 dep on what was received
 	int raw_data[TOTAL_SAMPLES] ;  
@@ -86,9 +97,9 @@ int main(int argc, char *argv[]) {
 	volatile int irSig = 0 ;
 	i = 0;
 	while(samples_remaining > 0 ) {
-		irSig = mraa_gpio_read(gpio);
-		raw_data[i] = irSig ; 
-		printf("%d", raw_data[i]);
+		//irSig = mraa_gpio_read(gpio);
+		raw_data[i] = mraa_gpio_read(gpio); 
+		//printf("%d", raw_data[i]);
 		//for (j = 0 ; j < MAX_SAMPLING_RATE ; j++);
 		for (j = 0 ; j < SAMPLING_RATE ; j++);
 		i++;
@@ -96,22 +107,26 @@ int main(int argc, char *argv[]) {
 	}//end while loop
 	i = 0;
 
-
 	printf("\nSample Collection Complete\n");
+
+	for (i = 0; i < TOTAL_SAMPLES; i++) {
+		printf("%d", raw_data[i]);
+	}
+	i = 0;
+
     
 	// Part 2: Consolidating the bits
 	// Count the sequence of 1 or 0 received in a row
 	// Store in values[]
 
-	printf("\nPart 2: Consolidating the bits");
+	printf("\n---------------------Part 2: Consolidating the bits---------------------");
 	unsigned int counting_high_or_low = raw_data[0];
 	unsigned int high_duration = 0;
 	unsigned int low_duration = 0;
 	// values stores the number of 0's or the number of 1's 
 	unsigned int values[100];
 
-	printf("\nThe first bit we received was raw_data[0] = %u\n", raw_data[0]);
-	printf("Therefore we are counting a stream of digits of: %u", counting_high_or_low);
+	printf("\nraw_data[0] = %u, counting %u's\n", raw_data[0], counting_high_or_low);
 	if (raw_data[0] == 0) {
 		low_duration = 1;
 	}
@@ -178,14 +193,17 @@ int main(int argc, char *argv[]) {
 	k = 0;
 	unsigned int fsm_state = 0 ; 
 	unsigned int preamble_found = 1 ; 
-	printf("\nPart 3: Bit Decoding FSM\n");
+	int bit = -1;
+	int preamble_relaxed_detection;  
+	int all_received_bits[25];
+	printf("\n---------------------Part 3: Bit Decoding FSM---------------------\n");
 	printf("Begin Decoding\n");
 	
 	while (i < num_values)
 	{
 		printf("Iteration %u out of %u\n", i, num_values) ; 
 		preamble_relaxed_detection = 0 ;
-		for (j = i; j < ( i + preamble_duration*2 ); j++)
+		for (j = i; j < ( i + preamble_length*2 ); j++)
 		{
 			printf("Inspecting j = %u with the if statement\n", values[j]);
 			
@@ -206,8 +224,8 @@ int main(int argc, char *argv[]) {
 		}
 		if (preamble_found == 1)
 		{
-			printf("We found the preamble, now we need to skip preamble_duration * 2 values.\n");
-			for(l = 0; l < preamble_duration * 2; l ++) {
+			printf("We found the preamble, now we need to skip preamble_length * 2 values.\n");
+			for(l = 0; l < preamble_length * 2; l ++) {
 				printf("Skipping i = %u, values[i] = %u\n", i, values[i]);
 				i++;
 			}
@@ -242,13 +260,13 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	
-	printf("FSM Complete\n\n\n\n");
+	printf("FSM Complete\n");
 	int messages = received_bit_count/4;
 	printf("Identified %d bits\n", received_bit_count);
 	printf("This corresponds to %d messages\n", messages);
 
 	
-	printf("\nNow we print the all_received_bits[] array.\n");
+	printf("Now we print the all_received_bits[] array.\n");
 	num_values = i ; 
 	for (i = 0 ; i < received_bit_count; i++ ) {
 		printf("all_received_bits[%u] = %d\n", i, all_received_bits[i]);
@@ -258,7 +276,7 @@ int main(int argc, char *argv[]) {
 	// Part 4: Bit Verifier
 	// Inspect all_received_bits[]
 	// Store in TEMP
-	printf("\nPart 4: Bit Verifier\n");
+	printf("\n---------------------Part 4: Bit Verifier---------------------\n");
 	printf("Begin Bit Inspection\n");
 	i = 0;
 	j = 0;
@@ -297,16 +315,18 @@ int main(int argc, char *argv[]) {
 	}
 
 	printf("Done Bit Inspection\n");
+	
+	// Part 5: Valid Sequence Verifier
+	// if we find a total of 3 matching
+	// bit sequences (out of 5), return
+	printf("\n---------------------Part 5: Valid Sequence Verifier---------------------\n");
+	
 	if (messages_to_process > 0) {
 		printf("Messages Correspond to Locations:\n");
 		for (i = 0 ; i < messages_to_process; i++ ) {
 			printf("%d \n", location[i]);
 		}
 		
-		// Part 5: Valid Sequence Verifier
-		// if we find a total of 3 matching
-		// bit sequences (out of 5), return
-		printf("\nPart 5: Valid Sequence Verifier\n");
 		printf("Begin Counting Matching Bits\n");
 		int match_counter = 0;
 		for(i = 0; i < messages_to_process; i++) {
@@ -314,7 +334,7 @@ int main(int argc, char *argv[]) {
 				if (location[i] == location[j]) {
 					match_counter++;
 				}
-				if (match_counter >= LOCATION_DETECTION_THRESHOLD && location[i] != 0 ) {
+				if (match_counter >= location_detection_threshold && location[i] != 0 ) {
 					printf("Done Counting Matching Bits\n");
 					printf("\nReturning location[i] = %d\n", location[i]);
 					return location[i];
@@ -323,7 +343,6 @@ int main(int argc, char *argv[]) {
 			match_counter = 0;
 		}
 	}
-	printf("\nReturning Zero Location");
-	printf("Not Enough Bits Matching, Return 0\n");	
+	printf("Not enough bits matched, Return 0\n");	
 	return 0;
 }//end main

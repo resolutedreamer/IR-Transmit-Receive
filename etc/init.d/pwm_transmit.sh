@@ -1,3 +1,3 @@
 #!/bin/sh
-~/pwm_transmit
+/bin/pwm_transmit
 

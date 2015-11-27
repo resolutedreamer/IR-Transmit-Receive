@@ -12,6 +12,7 @@
 // 	Parameters:
 // 	argc and argv
 // 
+//	Argument 1: edisonID
 //	Provide a number from 0-3 to indicate the ID# 
 //	of the Edison anchor node (defaults to 0) 
 //
@@ -26,6 +27,9 @@
 char preamble_length = 5;
 #define SCALING_FACTOR 5 
 #define PREAMBLE_DELAY 750000/SCALING_FACTOR // 10 miliseconds
+
+// by default, the edison has ID 0
+int edisonID = 0;
 
 #define SHORT_DELAY 350000/SCALING_FACTOR // 5 miliseconds
 #define LONG_DELAY 1400000/SCALING_FACTOR // 20 miliseconds
@@ -65,6 +69,37 @@ void check_preamble_length() {
     close(fd);
 
 }
+
+void check_edison_id() {
+	int fd;
+    unsigned char data;
+    unsigned char buf[100];
+    int i, n;
+    fd = open("/bin/IR/edisonID.txt", O_RDWR | O_NOCTTY);
+    if (fd == -1)
+    {
+        printf("open edisonID.txt failed!\n");
+        return;
+    }
+ 
+    i = 0;
+ 
+    do
+    {
+        n = read(fd, &data, 1);
+        buf[i] = data;
+        i++;
+    } while(data != '\n' && i < 100);
+ 
+    i = (i >=99? 99:i);
+    buf[i] = '\0';
+    printf("Response from preamble_length.txt: %s", buf);
+	edisonID = buf[0];
+ 
+    close(fd);
+
+}
+
 
 void send_preamble_sequence(int preamble_duration, float duty) {
 	int i = 0, j = 0;
@@ -144,17 +179,27 @@ int main(int argc, char *argv[]) {
 	mraa_pwm_period_us(pwm4, 26);
 	mraa_pwm_enable(pwm4, 1);
 
-	// by default, the edison has ID 0
-	int edisonID = 0;
-	// if we pass in an argument, use it for the edisonID
-	// please pass in an integer
+	// check file for edisonID
+	check_edison_id();
+	
+	// if we pass in an argument, use it for the edisonID, takes
+	// priority over what's in the file. please pass in an integer
 	if (argc == 2) {
 		edisonID = atoi(argv[1]);
+		printf("Argument(1) Passed In! edisonID set to: %d\n", edisonID);
+	}
+	else {
+		printf("edisonID set to default value: %d\n", edisonID);
 	}
 	if (argc == 3) {
 		edisonID = atoi(argv[1]);
+		printf("Argument(1) Passed In! edisonID set to: %d\n", edisonID);
 		preamble_length = atoi(argv[2]);
+		printf("Argument(1) Passed In! Preamble Length set to: %d\n", preamble_length);
 	}
+	else {
+		printf("Preamble Length set to default value: %d\n", preamble_length);
+	}	
 	// This will transmit IR data on all 4 pins at once
 	// on a single Edison board
 
@@ -162,6 +207,7 @@ int main(int argc, char *argv[]) {
 	// Continuously Transmit IR Signal when the program is running
 	while(1) {
 		
+		// Updates the preamble_length variable based on info from server
 		check_preamble_length();
 		
 		// Preamble - Signals the Receiver Message Incoming
