@@ -2,21 +2,23 @@
 //
 //	pwm_receive.c
 //
-//	Original Author:
-//	Pranjal Rastogi
-//
-// 	Contributing Authors:
-// 	Anthony Nguyen
-// 	Raymond Andrade
+//	Authors: Pranjal Rastogi, Anthony Nguyen, Raymond Andrade
 //
 // 	Parameters:
 // 	argc and argv
 // 
-//	// currently no inputs
-//	// 
+//	Argument 1: preamble_length
+//	Provide a number from 0-5 to indicate the 
+//	number of preamble sequences that the
+// 	transmitter is expeceted to send (defaults to 5)
+//
+//	Argument 2: location_detection_threshold
+//	Provide a number from 0-5 to indicate the number 
+//	of correct messages required to accept a location
+//	(defaults to 1) 
 //
 /////////////////////////////////////////////////////////////////////////
-#include <stdio.h>
+#include "pwm_shared.h"
 #include <mraa/gpio.h>
 
 // this is the rate for the "for loop" which waits
@@ -48,8 +50,6 @@ int location_detection_threshold = 1;
 // getting 3 out of 5 locaitons as matching is rather a stringent criterion 
 // and will result in sending a zero location to the server 
 
-
-
 int main(int argc, char *argv[]) {
 	
 	// Initialization	
@@ -60,6 +60,7 @@ int main(int argc, char *argv[]) {
 	
 	mraa_gpio_context gpio;
 	gpio = mraa_gpio_init(8); // Arduino Pin 8 is Edison Pin 49
+	//gpio = mraa_gpio_init_raw(28);
 	mraa_gpio_dir(gpio, MRAA_GPIO_IN);
 	
 	
@@ -79,6 +80,7 @@ int main(int argc, char *argv[]) {
 	if (argc == 3) {
 		preamble_length = atoi(argv[1]);
 		printf("Argument(1) Passed In! Preamble Length set to: %d\n", preamble_length);
+		
 		location_detection_threshold = atoi(argv[2]);
 		printf("Argument(2) Passed In! Location detection threshold set to: %d\n", location_detection_threshold);
 	}
@@ -201,38 +203,38 @@ int main(int argc, char *argv[]) {
 	
 	while (i < num_values)
 	{
-		printf("Iteration %u out of %u\n", i, num_values) ; 
+		//printf("Iteration %u out of %u\n", i, num_values) ; 
 		preamble_relaxed_detection = 0 ;
 		for (j = i; j < ( i + preamble_length*2 ); j++)
 		{
-			printf("Inspecting j = %u with the if statement\n", values[j]);
+			//printf("Inspecting j = %u with the if statement\n", values[j]);
 			
 			if (values[j] < LOWERBOUND_PREAMBLE || values[j] > UPPERBOUND_PREAMBLE)  
 			{			
-                 if (values[j] > LOWERBOUND_PREAMBLE - 5 && values[j] < UPPERBOUND_PREAMBLE + 5 ) 
-			     {
-				     if ( preamble_relaxed_detection < PREAMBLE_RELAXED_DETECTION_THRESHOLD ) 
-				     {
-					     preamble_relaxed_detection++ ; 
-				         continue ;
-				     }
-			     }		
-				 printf("Did not find preamble \n" );
-				 preamble_found = 0;
-				 break;
+                if (values[j] > LOWERBOUND_PREAMBLE - 5 && values[j] < UPPERBOUND_PREAMBLE + 5 ) 
+			    {
+				    if ( preamble_relaxed_detection < PREAMBLE_RELAXED_DETECTION_THRESHOLD ) 
+				    {
+					    preamble_relaxed_detection++ ; 
+				        continue ;
+				    }
+			    }		
+				//printf("Did not find preamble \n" );
+				preamble_found = 0;
+				break;
 		    }
 		}
 		if (preamble_found == 1)
 		{
 			printf("We found the preamble, now we need to skip preamble_length * 2 values.\n");
 			for(l = 0; l < preamble_length * 2; l ++) {
-				printf("Skipping i = %u, values[i] = %u\n", i, values[i]);
+				//printf("Skipping i = %u, values[i] = %u\n", i, values[i]);
 				i++;
 			}
-			printf("Now we are at the first of the 8 values for the 4 bits.\n");
+			//printf("Now we are at the first of the 8 values for the 4 bits.\n");
 			for(k = 1 ; k <= 4 ; k++)
 			{
-				printf("Constituents of the bit %u %u \n ", values[i],values[i+1]);
+				//printf("Constituents of the bit %u %u \n ", values[i],values[i+1]);
 				
 				bit = -1;
 				
@@ -247,12 +249,12 @@ int main(int argc, char *argv[]) {
 				}
 				
 				i += 2;
-				printf("bit = %d\n", bit);
+				//printf("bit = %d\n", bit);
 				
 				all_received_bits[received_bit_count] = bit;
 				received_bit_count++;
 			} 
-			printf("\n");
+			//printf("\n");
 		}
 		else {
 			i++;

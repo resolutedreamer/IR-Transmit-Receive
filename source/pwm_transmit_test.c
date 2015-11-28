@@ -56,6 +56,7 @@ void send_preamble_sequence(int preamble_length, float duty) {
 	}
 }
 
+
 void send_low_bit(float duty) {
 	int i = 0;
 	printf("0 ");
@@ -90,43 +91,13 @@ void send_high_bit(float duty) {
 	for(i = SHORT_DELAY; i > 0; i--); // 5 ms
 }
 
-int check_edison_id() {
-	int fd;
-    unsigned char data;
-    unsigned char buf[100];
-    int i, n;
-    int returnValue = -1;
-    fd = open("/etc/IR/edisonID.txt", O_RDWR | O_NOCTTY);
-    if (fd == -1)
-    {
-        printf("open edisonID.txt failed!\n");
-        return returnValue;
-    }
- 
-    i = 0;
- 
-    do
-    {
-        n = read(fd, &data, 1);
-        buf[i] = data;
-        i++;
-    } while(data != '\n' && i < 100);
- 
-    i = (i >=99? 99:i);
-    buf[i] = '\0';
-    printf("Response from edisonID.txt: %s", buf);
-	returnValue = buf[0];
- 
-    close(fd);
-	return returnValue;
-}
 
 int main(int argc, char *argv[]) {
 	
 	int transmit_counter = 0;
 	int i = 0;
 	// GPIO Initialization - Edison has 4 PWM pins
-	float duty = .5f;
+	float duty = 1.0f;
 	
 	pwm1 = mraa_pwm_init(3);
 	mraa_pwm_period_us(pwm1, 26);
@@ -144,50 +115,13 @@ int main(int argc, char *argv[]) {
 	mraa_pwm_period_us(pwm4, 26);
 	mraa_pwm_enable(pwm4, 1);
 
-	// check file for edisonID
-	int temp = check_edison_id();
-	if (temp != -1) {
-		edisonID = temp;
-	}
-	temp = -1;
-	
-	// if we pass in an argument, use it for the preamble_length, takes
-	// priority over what's in the file. please pass in an integer
-	if (argc == 2) {
-		preamble_length = atoi(argv[1]);
-		printf("Argument(1) Passed In! Preamble Length set to: %d\n", preamble_length);
-	}
-	else {
-		printf("Preamble Length set to default value: %d\n", preamble_length);
-	}
-	// if we pass in an argument, use it for the edisonID, takes
-	// priority over what's in the file. please pass in an integer
-	if (argc == 3) {
-		preamble_length = atoi(argv[1]);
-		printf("Argument(1) Passed In! Preamble Length set to: %d\n", preamble_length);
-		
-		edisonID = atoi(argv[2]);
-		printf("Argument(2) Passed In! edisonID set to: %d\n", edisonID);		
-	}
-	else {
-		printf("edisonID set to default value: %d\n", edisonID);		
-	}	
-	// This will transmit IR data on all 4 pins at once
-	// on a single Edison board
-
 	
 	// Continuously Transmit IR Signal when the program is running
 	while(1) {
 		
-		// Updates the preamble_length variable based on info from server
-		temp = check_preamble_length();
-		if (temp != -1) {
-			edisonID = temp;
-		}
-		
-		
 		// Preamble - Signals the Receiver Message Incoming
 		send_preamble_sequence(preamble_length, duty);
+		
 		
 		// Sending Edison Board ID # - 2 bits, MSB then LSB
 		switch (edisonID) {
@@ -215,6 +149,7 @@ int main(int argc, char *argv[]) {
 				send_low_bit(duty);	// Send lsb bit 0 = LOW
 				send_low_bit(duty);	// Send msb bit 1 = LOW				
 		}
+		
 		
 		// Sending Edison IR Emitter ID # - 2 bits, MSB then LSB
 		
