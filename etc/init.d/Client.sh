@@ -1,4 +1,2 @@
 #!/bin/sh
-python ~/Client.py
-
-
+python /bin/Client.py

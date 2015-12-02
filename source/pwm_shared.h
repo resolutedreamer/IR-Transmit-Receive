@@ -1,6 +1,9 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <mraa/pwm.h>
+#include <mraa/gpio.h>
+#include <sched.h>
 /* File control definitions */
 #include <fcntl.h>
 

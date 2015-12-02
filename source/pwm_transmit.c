@@ -30,63 +30,78 @@ int edisonID = 0;
 #define LONG_DELAY 1400000/SCALING_FACTOR // 20 miliseconds
 #define MID_DELAY 1050000/SCALING_FACTOR // 15 miliseconds
 
+#define LOW 0
+#define HIGH 1
+#define DUTY .5f
+
 mraa_pwm_context pwm1;
 mraa_pwm_context pwm2;
 mraa_pwm_context pwm3;
 mraa_pwm_context pwm4;
 
-void send_preamble_sequence(int preamble_length, float duty) {
+// to invert, swap DUTY and 0 here
+/*
+void mraa_pwm_write(mraa_pwm_context pwm) {
+	mraa_pwm_write(pwm, DUTY);
+}
+
+void mraa_pwm_write(mraa_pwm_context pwm) {
+	mraa_pwm_write(pwm, 0);
+}
+*/
+
+void send_preamble_sequence(int preamble_length) {
 	int i = 0, j = 0;
-	printf("\nSending Preamble. ");
+	printf("\nSending preamble_length = %d ", preamble_length);
 
 	for(i = preamble_length; i > 0; i--){
 		
 		//equal durations
-		mraa_pwm_write(pwm1, duty); // high
-		mraa_pwm_write(pwm2, duty); // high
-		mraa_pwm_write(pwm3, duty); // high
-		mraa_pwm_write(pwm4, duty); // high
+		mraa_pwm_write(pwm1,DUTY);
+		mraa_pwm_write(pwm2,DUTY);
+		mraa_pwm_write(pwm3,DUTY);
+		mraa_pwm_write(pwm4,DUTY);
 		for(j = PREAMBLE_DELAY; j > 0; j--);
 
-		mraa_pwm_write(pwm1, 0); // low
-		mraa_pwm_write(pwm2, 0); // low
-		mraa_pwm_write(pwm3, 0); // low
-		mraa_pwm_write(pwm4, 0); // low
+		mraa_pwm_write(pwm1,0);
+		mraa_pwm_write(pwm2,0);
+		mraa_pwm_write(pwm3,0);
+		mraa_pwm_write(pwm4,0);
 		for(j = PREAMBLE_DELAY; j > 0; j--);
 	}
 }
 
-void send_low_bit(float duty) {
+void send_low_bit() {
 	int i = 0;
 	printf("0 ");
-	
-	mraa_pwm_write(pwm1, duty);
-	mraa_pwm_write(pwm2, duty);
-	mraa_pwm_write(pwm3, duty);
-	mraa_pwm_write(pwm4, duty);
+
+	mraa_pwm_write(pwm1,DUTY);
+	mraa_pwm_write(pwm2,DUTY);
+	mraa_pwm_write(pwm3,DUTY);
+	mraa_pwm_write(pwm4,DUTY);
 	for(i = SHORT_DELAY; i > 0; i--); // 5 ms
 	
-	mraa_pwm_write(pwm1, 0);
-	mraa_pwm_write(pwm2, 0);
-	mraa_pwm_write(pwm3, 0);
-	mraa_pwm_write(pwm4, 0);
+	mraa_pwm_write(pwm1,0);
+	mraa_pwm_write(pwm2,0);
+	mraa_pwm_write(pwm3,0);
+	mraa_pwm_write(pwm4,0);
 	for(i = LONG_DELAY; i > 0; i--); // 20 ms
 }
 
-void send_high_bit(float duty) {
+void send_high_bit() {
 	int i = 0;
 	printf("1 ");
 	
-	mraa_pwm_write(pwm1, duty);	
-	mraa_pwm_write(pwm2, duty);	
-	mraa_pwm_write(pwm3, duty);	
-	mraa_pwm_write(pwm4, duty);	
+	mraa_pwm_write(pwm1,DUTY);
+	mraa_pwm_write(pwm2,DUTY);
+	mraa_pwm_write(pwm3,DUTY);
+	mraa_pwm_write(pwm4,DUTY);
 	for(i = LONG_DELAY; i > 0; i--); //20 ms
 
-	mraa_pwm_write(pwm1, 0);
-	mraa_pwm_write(pwm2, 0);
-	mraa_pwm_write(pwm3, 0);
-	mraa_pwm_write(pwm4, 0);
+	mraa_pwm_write(pwm1,0);
+	mraa_pwm_write(pwm2,0);
+	mraa_pwm_write(pwm3,0);
+	mraa_pwm_write(pwm4,0);
 	for(i = SHORT_DELAY; i > 0; i--); // 5 ms
 }
 
@@ -123,10 +138,12 @@ int check_edison_id() {
 
 int main(int argc, char *argv[]) {
 	
+	//const struct sched_param priority={1};
+	//sched_setscheduler(0,SCHED_FIFO,&priority);
+	
 	int transmit_counter = 0;
 	int i = 0;
 	// GPIO Initialization - Edison has 4 PWM pins
-	float duty = .5f;
 	
 	pwm1 = mraa_pwm_init(3);
 	mraa_pwm_period_us(pwm1, 26);
@@ -147,6 +164,8 @@ int main(int argc, char *argv[]) {
 	// check file for edisonID
 	int temp = check_edison_id();
 	if (temp != -1) {
+		printf("Got Edison ID from /etc/IR/edisonID.txt\n");
+		printf("ID I got was %d\n", temp);
 		edisonID = temp;
 	}
 	temp = -1;
@@ -182,103 +201,105 @@ int main(int argc, char *argv[]) {
 		// Updates the preamble_length variable based on info from server
 		temp = check_preamble_length();
 		if (temp != -1) {
-			edisonID = temp;
+			printf("\nGot Preamble Length from /etc/IR/preamble_length.txt\n");
+			printf("ID I got was %d\n", temp);
+			printf("But we are still going to use 5\n", temp);
+			//preamble_length = temp;
 		}
 		
-		
 		// Preamble - Signals the Receiver Message Incoming
-		send_preamble_sequence(preamble_length, duty);
+		send_preamble_sequence(preamble_length);
 		
 		// Sending Edison Board ID # - 2 bits, MSB then LSB
 		switch (edisonID) {
 			case 0:
 				printf("EdisonID: 0 - ");
-				send_low_bit(duty);	// Send lsb bit 0 = LOW
-				send_low_bit(duty);	// Send msb bit 1 = LOW
+				send_low_bit();	// Send lsb bit 0 = LOW
+				send_low_bit();	// Send msb bit 1 = LOW
 				break;
 			case 1:
 				printf("EdisonID: 1 - ");
-				send_high_bit(duty);	// Send lsb bit 0 = HIGH
-				send_low_bit(duty);	// Send msb bit 1 = LOW
+				send_low_bit();	// Send msb bit 1 = LOW
+				send_high_bit();	// Send lsb bit 0 = HIGH
 				break;
 			case 2:
 				printf("EdisonID: 2 - ");
-				send_low_bit(duty);	// Send lsb bit 0 = LOW
-				send_high_bit(duty);	// Send msb bit 1 = 
+				send_high_bit();	// Send msb bit 1 = 
+				send_low_bit();	// Send lsb bit 0 = LOW
 				break;
 			case 3:
 				printf("EdisonID: 3 - ");
-				send_high_bit(duty);	// Send lsb bit 0 = HIGH
-				send_high_bit(duty);	// Send msb bit 1 = HIGH
+				send_high_bit();	// Send lsb bit 0 = HIGH
+				send_high_bit();	// Send msb bit 1 = HIGH
 				break;
 			default:
-				send_low_bit(duty);	// Send lsb bit 0 = LOW
-				send_low_bit(duty);	// Send msb bit 1 = LOW				
+				send_low_bit();	// Send lsb bit 0 = LOW
+				send_low_bit();	// Send msb bit 1 = LOW				
 		}
 		
 		// Sending Edison IR Emitter ID # - 2 bits, MSB then LSB
 		
-		// pwm1 = 00 = short-long/short-long = 5-20/5-20
-		// pwm2 = 01 = short-long/long-short = 5-20/20-5
-		// pwm3 = 10 = long-short/short-long = 20-5/5-20
-		// pwm4 = 11 = long-short/long-short = 20-5/20-5
+		// pwm1,DUTY = 00 = short-long/short-long = 5-20/5-20
+		// pwm2,DUTY = 01 = short-long/long-short = 5-20/20-5
+		// pwm3,DUTY = 10 = long-short/short-long = 20-5/5-20
+		// pwm4,DUTY = 11 = long-short/long-short = 20-5/20-5
 		
 		// First Bit
-		mraa_pwm_write(pwm1, duty);
-		mraa_pwm_write(pwm2, duty);
-		mraa_pwm_write(pwm3, duty);
-		mraa_pwm_write(pwm4, duty);
+		mraa_pwm_write(pwm1,DUTY);
+		mraa_pwm_write(pwm2,DUTY);
+		mraa_pwm_write(pwm3,DUTY);
+		mraa_pwm_write(pwm4,DUTY);
 		for(i = SHORT_DELAY; i > 0; i--); // 5 ms
 		
-		mraa_pwm_write(pwm1, 0);
-		mraa_pwm_write(pwm2, 0);
-		//mraa_pwm_write(pwm3, duty);
-		//mraa_pwm_write(pwm4, duty);
+		mraa_pwm_write(pwm1,0);
+		mraa_pwm_write(pwm2,0);
+		//mraa_pwm_write(pwm3,DUTY, DUTY);
+		//mraa_pwm_write(pwm4,DUTY, DUTY);
 		for(i = MID_DELAY; i > 0; i--); // 15 ms
 
 		//mraa_pwm_write(pwm1, 0);
 		//mraa_pwm_write(pwm2, 0);
-		mraa_pwm_write(pwm3, 0);
-		mraa_pwm_write(pwm4, 0);
+		mraa_pwm_write(pwm3,0);
+		mraa_pwm_write(pwm4,0);
 		for(i = SHORT_DELAY; i > 0; i--); // 5 ms
 		
 		// Second Bit	
-		mraa_pwm_write(pwm1, duty);	
-		mraa_pwm_write(pwm2, duty);	
-		mraa_pwm_write(pwm3, duty);	
-		mraa_pwm_write(pwm4, duty);	
+		mraa_pwm_write(pwm1,DUTY);
+		mraa_pwm_write(pwm2,DUTY);
+		mraa_pwm_write(pwm3,DUTY);
+		mraa_pwm_write(pwm4,DUTY);
 		for(i = SHORT_DELAY; i > 0; i--); // 20 ms
 
-		mraa_pwm_write(pwm1, 0);	
-		//mraa_pwm_write(pwm2, duty);	
-		mraa_pwm_write(pwm3, 0);	
-		//mraa_pwm_write(pwm4, duty);	
+		mraa_pwm_write(pwm1,0);
+		//mraa_pwm_write(pwm2,DUTY, DUTY);	
+		mraa_pwm_write(pwm3,0);
+		//mraa_pwm_write(pwm4,DUTY, DUTY);	
 		for(i = MID_DELAY; i > 0; i--); // 15 ms
 
 		//mraa_pwm_write(pwm1, 0);
-		mraa_pwm_write(pwm2, 0);
+		mraa_pwm_write(pwm2,0);
 		//mraa_pwm_write(pwm3, 0);
-		mraa_pwm_write(pwm4, 0);
+		mraa_pwm_write(pwm4,0);
 		for(i = SHORT_DELAY; i > 0; i--); // 5 ms
 		
 		/*
-		send_message_bit(edisonID, 0, duty, pwm1);
-		send_message_bit(edisonID, 0, duty, pwm1);
-		send_message_bit(edisonID, 0, duty, pwm1);
-		send_message_bit(edisonID, 0, duty, pwm1);
+		send_message_bit(edisonID, 0, DUTY, pwm1,DUTY);
+		send_message_bit(edisonID, 0, DUTY, pwm1,DUTY);
+		send_message_bit(edisonID, 0, DUTY, pwm1,DUTY);
+		send_message_bit(edisonID, 0, DUTY, pwm1,DUTY);
 		
 		
 		for (transmit_counter = TRANSMIT_DURATION; transmit_counter >= 0; transmit_counter--) {
-			send_message_bit(edisonID, 0, duty, pwm1);
+			send_message_bit(edisonID, 0, DUTY, pwm1,DUTY);
 		}
 		for (transmit_counter = TRANSMIT_DURATION; transmit_counter >= 0; transmit_counter--) {
-			send_message_bit(edisonID, 1, duty, pwm2);			
+			send_message_bit(edisonID, 1, DUTY, pwm2,DUTY);			
 		}
 		for (transmit_counter = TRANSMIT_DURATION; transmit_counter >= 0; transmit_counter--) {
-			send_message_bit(edisonID, 2, duty, pwm3);
+			send_message_bit(edisonID, 2, DUTY, pwm3,DUTY);
 		}
 		for (transmit_counter = TRANSMIT_DURATION; transmit_counter >= 0 ;transmit_counter--) {
-			send_message_bit(edisonID, 3, duty, pwm4);
+			send_message_bit(edisonID, 3, DUTY, pwm4,DUTY);
 		}
 		*/
 		
