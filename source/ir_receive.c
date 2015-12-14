@@ -1,6 +1,6 @@
 /////////////////////////////////////////////////////////////////////////
 //
-//	pwm_receive.c
+//	ir_receive.c
 //
 //	Authors: Pranjal Rastogi, Anthony Nguyen, Raymond Andrade
 //
@@ -71,9 +71,16 @@ int main(int argc, char *argv[]) {
 	// Part 0: Determine Preamble Duration
 	// Detect the length of the preamble we expect from this message
 	// Defaults to 5, get passed in as the 1st argument to pwm_receive
-	printf("\n---------------------pwm_receive.c---------------------\n");
+	printf("\n---------------------ir_receive.c---------------------\n");
 	
-	printf("\n---------------------Part 0: Determine Preamble Duration---------------------\n");
+	printf("\n---------------------Part 0: Apply Settings from Config Files---------------------\n");
+	temp = check_preamble_length();
+	if (temp != -1) {
+		printf("ID from /etc/IR_conf/preamble_length.txt was %d\n", temp);
+		preamble_length = temp;
+	}
+	
+	printf("\n---------------------Part 0: Apply Settings from Passed in Arguments---------------------\n");
 	if (argc == 2) {
 		preamble_length = atoi(argv[1]);
 		printf("Argument(1) Passed In! Preamble Length set to: %d\n", preamble_length);
@@ -115,26 +122,12 @@ int main(int argc, char *argv[]) {
 
 	printf("\nSample Collection Complete\n");
 
-    printf("Raw Received Value");
+    printf("Raw Received Value\n");
     for (i = 0; i < TOTAL_SAMPLES; i++) {
         printf("%d", raw_data[i]);
 	}
 	i = 0;
 
-    printf("Flipping due to MOSFET Inversion");
-    
-    for (i = 0; i < TOTAL_SAMPLES; i++) {
-        if (raw_data[i] == 0) {
-            raw_data[i] = 1;
-        }
-        else if (raw_data[i] == 1) {
-            raw_data[i] = 0;
-        }
-        printf("%d", raw_data[i]);
-    }
-    i = 0;
-
-    
     
 	// Part 2: Consolidating the bits
 	// Count the sequence of 1 or 0 received in a row

@@ -28,14 +28,14 @@ IR Transmit/Receive for Intel Edison
 * see [LICENSE](https://github.com/username/sw-name/blob/master/LICENSE.md) file
 
 ## Version 
-* Version 0.7
+* Version 1.0
 
 ## How-to use this code
 * see [INSTRUCTIONS](https://github.com/username/sw-name/blob/master/INSTRUCTIONS.md) file
 
 ## Contact
 #### Developer/Company
-* Homepage: 
+* Homepage: www.resolutedreamer.com
 * e-mail: 
 * Twitter: [@twitterhandle](https://twitter.com/twitterhandle "twitterhandle on twitter")
 * other communication/social media

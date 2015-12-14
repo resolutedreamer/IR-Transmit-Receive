@@ -44,21 +44,20 @@ sample_list = ["0", # 0 for debugging the case when the IR receiver receives not
                "16"]
 
 # These paths are on the client
-current_location_file_path = "current_location_update"
-ready_file_path = "Ready.txt"
+current_location_file_path = "/etc/IR_conf/current_location.csv"
+ready_file_path = "/etc/IR_conf/Ready.txt"
 ready_message = "ready t" # Change this based on the tag
 
-protected_zone_breach_file_path = "../protected_zone_breach.txt"
+protected_zone_breach_file_path = "/etc/IR_conf/protected_zone_breach.txt"
 
-preamble_length_path = "preamble_length.txt"
-pwm_receive_path = "./pwm_receive"
-
+preamble_length_path = "/etc/IR_conf/preamble_length.txt"
+ir_receive_path = "/bin/ir_receive"
 
 print 'Number of arguments:', len(sys.argv), 'arguments.'
 print 'Argument List:', str(sys.argv)
 
 # Change this based on your place. However you can give it as an argument in the script call
-server_IP = '172.17.100.218'
+server_IP = '192.168.1.2'
 
 # Periodic delay for sampling
 delay = 0.2
@@ -80,7 +79,7 @@ except:
     print "no ready message passed in, use default 1"
 
 
-print "pwm_receive_path is: " + pwm_receive_path
+print "ir_receive_path is: " + ir_receive_path
 print "current_location_file_path is: " + current_location_file_path
 
 
@@ -94,32 +93,32 @@ class PWM_Receive(threading.Thread):
         pastValue = 0 # a variable maintain the a one sample older value of the location
         while True:
             returnValue = -1
-            pwm_preamble_length = ""
+            preamble_length = ""
 
             try:
                 # Check if the file has been written into with Ready
                 with open(preamble_length_path) as f:
                     for line in f:
                         print "Preamble Length for this message: " + line.rstrip()
-                        pwm_preamble_length += line.rstrip()
+                        preamble_length += line.rstrip()
             except:
                 print "\nNo preamble_length.txt file, assume default preamble_length = 5"
 
-            pwm_path = [pwm_receive_path]
-            if len(pwm_preamble_length) > 0:
-                pwm_path = [pwm_receive_path, pwm_preamble_length]
+            ir_receive_call = [ir_receive_path]
+            if len(preamble_length) > 0:
+                ir_receive_call = [ir_receive_path, preamble_length]
 
             try:
-                print "Calling pwm_receive subprocess: " + str(pwm_path)
-                returnValue = subprocess.call(pwm_path)
+                print "Calling ir_receive subprocess: " + str(ir_receive_call)
+                returnValue = subprocess.call(ir_receive_call)
                 print '##########################################'+ str(returnValue)
-                print "pwm_receive returned: " + str(returnValue)
+                print "ir_receive returned: " + str(returnValue)
             except subprocess.CalledProcessError, returnValue:
                 print subprocess.CalledProcessError
                 print "CalledProcessError Exception"
                 print returnValue
             except:
-                print "Exception, probably no pwm_receive installed"
+                print "Exception, probably no ir_receive installed"
 
             # file writing in python is in blocking mode to avoid RAW hazard by default it is blocking on Unix
             # The os.write call won't return immediately, it will sleep until the write is complete by default in Unix

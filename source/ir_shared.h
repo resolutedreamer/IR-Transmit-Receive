@@ -1,3 +1,11 @@
+/////////////////////////////////////////////////////////////////////////
+//
+//	ir_shared.h
+//
+//	Author: Anthony Nguyen
+//
+/////////////////////////////////////////////////////////////////////////
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,7 +21,7 @@ int check_preamble_length() {
     unsigned char buf[100];
     int i, n;
 	int returnValue = -1;
-    fd = open("/etc/IR/preamble_length.txt", O_RDWR | O_NOCTTY);
+    fd = open("/etc/IR_config/preamble_length.txt", O_RDWR | O_NOCTTY);
     if (fd == -1)
     {
         printf("open preamble_length.txt failed!\n");
@@ -31,7 +39,7 @@ int check_preamble_length() {
  
     i = (i >=99? 99:i);
     buf[i] = '\0';
-    printf("Response from preamble_length.txt: %s", buf);
+    printf("\nResponse from preamble_length.txt: %s\n", buf);
 	returnValue = buf[0];
  
     close(fd);

@@ -1,6 +1,6 @@
 /////////////////////////////////////////////////////////////////////////
 //
-//	pwm_transmit.c
+//	ir_transmit.c
 //
 //	Authors: Raymond Andrade, Anthony Nguyen, Pranjal Rastogi
 //
@@ -41,19 +41,18 @@ mraa_pwm_context pwm4;
 
 // to invert, swap DUTY and 0 here
 /*
-void mraa_pwm_write(mraa_pwm_context pwm) {
+void WRITE_HIGH(mraa_pwm_context pwm) {
 	mraa_pwm_write(pwm, DUTY);
 }
 
-void mraa_pwm_write(mraa_pwm_context pwm) {
+void WRITE_LOW(mraa_pwm_context pwm) {
 	mraa_pwm_write(pwm, 0);
 }
 */
 
 void send_preamble_sequence(int preamble_length) {
 	int i = 0, j = 0;
-	printf("\nSending preamble_length = %d ", preamble_length);
-
+	
 	for(i = preamble_length; i > 0; i--){
 		
 		//equal durations
@@ -73,7 +72,7 @@ void send_preamble_sequence(int preamble_length) {
 
 void send_low_bit() {
 	int i = 0;
-	printf("0 ");
+	printf("0");
 
 	mraa_pwm_write(pwm1,DUTY);
 	mraa_pwm_write(pwm2,DUTY);
@@ -90,7 +89,7 @@ void send_low_bit() {
 
 void send_high_bit() {
 	int i = 0;
-	printf("1 ");
+	printf("1");
 	
 	mraa_pwm_write(pwm1,DUTY);
 	mraa_pwm_write(pwm2,DUTY);
@@ -138,6 +137,7 @@ int check_edison_id() {
 
 int main(int argc, char *argv[]) {
 	
+	printf("\n---------------------ir_transmit.c---------------------\n");
 	//const struct sched_param priority={1};
 	//sched_setscheduler(0,SCHED_FIFO,&priority);
 	
@@ -161,6 +161,14 @@ int main(int argc, char *argv[]) {
 	mraa_pwm_period_us(pwm4, 26);
 	mraa_pwm_enable(pwm4, 1);
 
+	printf("\n---------------------Part 0: Apply Settings from Config Files---------------------\n");
+	temp = check_preamble_length();
+	if (temp != -1) {
+		printf("\nGot Preamble Length from /etc/IR/preamble_length.txt\n");
+		printf("ID I got was %d\n", temp);
+		printf("But we are still going to use 5\n", temp);
+		//preamble_length = temp;
+	}
 	// check file for edisonID
 	int temp = check_edison_id();
 	if (temp != -1) {
@@ -170,6 +178,7 @@ int main(int argc, char *argv[]) {
 	}
 	temp = -1;
 	
+	printf("\n---------------------Part 0: Apply Settings from Passed in Arguments---------------------\n");
 	// if we pass in an argument, use it for the preamble_length, takes
 	// priority over what's in the file. please pass in an integer
 	if (argc == 2) {
@@ -177,7 +186,7 @@ int main(int argc, char *argv[]) {
 		printf("Argument(1) Passed In! Preamble Length set to: %d\n", preamble_length);
 	}
 	else {
-		printf("Preamble Length set to default value: %d\n", preamble_length);
+		printf("No Argument(1), preamble Length set to default value: %d\n", preamble_length);
 	}
 	// if we pass in an argument, use it for the edisonID, takes
 	// priority over what's in the file. please pass in an integer
@@ -189,7 +198,7 @@ int main(int argc, char *argv[]) {
 		printf("Argument(2) Passed In! edisonID set to: %d\n", edisonID);		
 	}
 	else {
-		printf("edisonID set to default value: %d\n", edisonID);		
+		printf("No Argument(2), edisonID set to default value: %d\n", edisonID);		
 	}	
 	// This will transmit IR data on all 4 pins at once
 	// on a single Edison board
@@ -197,44 +206,41 @@ int main(int argc, char *argv[]) {
 	
 	// Continuously Transmit IR Signal when the program is running
 	while(1) {
-		
+		printf("\n---------------------Transmission---------------------\n");
+	
 		// Updates the preamble_length variable based on info from server
 		temp = check_preamble_length();
 		if (temp != -1) {
-			printf("\nGot Preamble Length from /etc/IR/preamble_length.txt\n");
-			printf("ID I got was %d\n", temp);
-			printf("But we are still going to use 5\n", temp);
-			//preamble_length = temp;
+			printf("ID from /etc/IR_conf/preamble_length.txt was %d\n", temp);
+			preamble_length = temp;
 		}
 		
 		// Preamble - Signals the Receiver Message Incoming
+		printf("preamble_length = %d, ", preamble_length);
 		send_preamble_sequence(preamble_length);
 		
 		// Sending Edison Board ID # - 2 bits, MSB then LSB
 		switch (edisonID) {
+			printf("EdisonID: %d - ", edisonID);
 			case 0:
-				printf("EdisonID: 0 - ");
-				send_low_bit();	// Send lsb bit 0 = LOW
-				send_low_bit();	// Send msb bit 1 = LOW
+				send_low_bit();		// Send lsb bit 0 = LOW
+				send_low_bit();		// Send msb bit 1 = LOW
 				break;
 			case 1:
-				printf("EdisonID: 1 - ");
-				send_low_bit();	// Send msb bit 1 = LOW
+				send_low_bit();		// Send msb bit 1 = LOW
 				send_high_bit();	// Send lsb bit 0 = HIGH
 				break;
 			case 2:
-				printf("EdisonID: 2 - ");
-				send_high_bit();	// Send msb bit 1 = 
-				send_low_bit();	// Send lsb bit 0 = LOW
+				send_high_bit();	// Send msb bit 1 = HIGH
+				send_low_bit();		// Send lsb bit 0 = LOW
 				break;
 			case 3:
-				printf("EdisonID: 3 - ");
 				send_high_bit();	// Send lsb bit 0 = HIGH
 				send_high_bit();	// Send msb bit 1 = HIGH
 				break;
 			default:
-				send_low_bit();	// Send lsb bit 0 = LOW
-				send_low_bit();	// Send msb bit 1 = LOW				
+				send_low_bit();		// Send lsb bit 0 = LOW
+				send_low_bit();		// Send msb bit 1 = LOW				
 		}
 		
 		// Sending Edison IR Emitter ID # - 2 bits, MSB then LSB
@@ -244,6 +250,7 @@ int main(int argc, char *argv[]) {
 		// pwm3,DUTY = 10 = long-short/short-long = 20-5/5-20
 		// pwm4,DUTY = 11 = long-short/long-short = 20-5/20-5
 		
+		printf(", EmitterIDs 0-3");
 		// First Bit
 		mraa_pwm_write(pwm1,DUTY);
 		mraa_pwm_write(pwm2,DUTY);
