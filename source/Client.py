@@ -10,15 +10,22 @@ import threading
 from socket import error as socket_error
 import errno
 import os.path
-#import mraa
-#import pyupm_buzzer as upmBuzzer
-
-import subprocess
+import mraa
+import pyupm_buzzer as upmBuzzer  # Available on the edison as library
 # from termcolor import colored
+import subprocess
+
+## Description:
+# Call this file as follows:
+# python Client.py <serverIP> <tagid>
+# for example: python Client.py '172.17.100.218' '1'
+# Call this file directly in the home folder
+
+
 
 # ------Globals-------- #
 # List of possible location
-sample_list = ["0",
+sample_list = ["0", # 0 for debugging the case when the IR receiver receives nothing.
                "1",
                "2",
                "3",
@@ -33,137 +40,149 @@ sample_list = ["0",
                "12",
                "13",
                "14",
-               "15"]
+               "15",
+               "16"]
 
 # These paths are on the client
-current_location_file_path = "/etc/IR/current_location_update.txt"
-ready_file_path = "/etc/IR/Ready.txt"
-ready_message = "ready t2"
+current_location_file_path = "current_location_update"
+ready_file_path = "Ready.txt"
+ready_message = "ready t" # Change this based on the tag
+
+protected_zone_breach_file_path = "../protected_zone_breach.txt"
 
 preamble_length_path = "preamble_length.txt"
 pwm_receive_path = "./pwm_receive"
 
-t1_protected_zone_breach_file_path = "../t1_protected_zone_breach.txt"
-t2_protected_zone_breach_file_path = "../t2_protected_zone_breach.txt"
 
-if (sys.platform == "linux2"):
-    current_location_file_path = "./current_location_update"
-    pwm_receive_path = "./pwm_receive"
-    print "pwm_receive_path is: " + pwm_receive_path
-elif (sys.platform == "win32"):
-    current_location_file_path = "X:/current_location_update.csv"
-    pwm_receive_path = "X:/pwm_receive"
-    
-    
 print 'Number of arguments:', len(sys.argv), 'arguments.'
 print 'Argument List:', str(sys.argv)
 
-server_IP = '131.179.22.190'
+# Change this based on your place. However you can give it as an argument in the script call
+server_IP = '172.17.100.218'
+
+# Periodic delay for sampling
+delay = 0.2
+# 2 seconds for debug
+
+
 try:
-	server_IP = sys.argv[1]
-	print "server ip passed in was " + server_IP
+    server_IP = sys.argv[1]
+    print "server ip passed in was " + server_IP
 except:
-	print "no server ip passed in, use default"
+    print "no server ip passed in, use default"
+
+try:
+    ready_message = ready_message + sys.argv[2]
+    print "ready message for this tag will be " + ready_message
+    protected_zone_breach_file_path = 't'+sys.argv[2]+'_protected_zone_breach.txt'
+except:
+    ready_message = ready_message + "1"
+    print "no ready message passed in, use default 1"
+
 
 print "pwm_receive_path is: " + pwm_receive_path
 print "current_location_file_path is: " + current_location_file_path
-	
+
+
 class PWM_Receive(threading.Thread):
     def __init__(self):
-        # Create the thread and run it
+        # Create the thread
         threading.Thread.__init__(self)
-        # thread = Thread(target=self.generate_location_thread())
-        # thread.start()
-        # thread.join()
-        # print "thread finished...exiting"
         return
 
     def run(self):
-        # generate_location_thread(self):
+        pastValue = 0 # a variable maintain the a one sample older value of the location
         while True:
-            returnValue = ""
-            returncode = -1
+            returnValue = -1
             pwm_preamble_length = ""
-            
+
             try:
                 # Check if the file has been written into with Ready
                 with open(preamble_length_path) as f:
-                    for line in f:                        
+                    for line in f:
                         print "Preamble Length for this message: " + line.rstrip()
                         pwm_preamble_length += line.rstrip()
             except:
                 print "\nNo preamble_length.txt file, assume default preamble_length = 5"
-            
+
             pwm_path = [pwm_receive_path]
             if len(pwm_preamble_length) > 0:
                 pwm_path = [pwm_receive_path, pwm_preamble_length]
-            
+
             try:
                 print "Calling pwm_receive subprocess: " + str(pwm_path)
                 returnValue = subprocess.call(pwm_path)
+                print '##########################################'+ str(returnValue)
                 print "pwm_receive returned: " + str(returnValue)
-            except subprocess.CalledProcessError, returncode:
+            except subprocess.CalledProcessError, returnValue:
                 print subprocess.CalledProcessError
                 print "CalledProcessError Exception"
-                print returncode
-                returnValue = returncode
+                print returnValue
             except:
                 print "Exception, probably no pwm_receive installed"
 
-            ## interpret returncode as edisonID + LEDID
-#            edisonID = -1
-#            ledID = -1
-#
-#            if returncode >= 0 and returncode < 4:
-#                edisonID = 0
-#                ledID = returncode
-#            elif returncode >= 4 and returncode < 8:
-#                edisonID = 1
-#                ledID = returncode - 4
-#            elif returncode >= 8 and returncode < 12:
-#                edisonID = 2
-#                ledID = returncode - 8
-#            elif returncode >= 12 and returncode < 16:
-#                edisonID = 3
-#                ledID = returncode - 12
-#
-#            print "edisonID = " + str(edisonID)
-#            print "ledID = " + str(ledID)
+            # file writing in python is in blocking mode to avoid RAW hazard by default it is blocking on Unix
+            # The os.write call won't return immediately, it will sleep until the write is complete by default in Unix
 
+            # only send to the server when there is meaningful data
+            # meaningful data is not zero and not repetitive value of location
+            # This to solve the problem of delay of server communication that takes approximately 600 ms
+            if returnValue != 0 and returnValue != pastValue:
+                # update the pastValue with teh currentValue of location
+                pastValue = returnValue
+
+                value_to_write = str(datetime.datetime.now()) + '\t' + str(returnValue) + '\n'
+                print value_to_write
+
+                with open(current_location_file_path, 'a+') as f:
+                    f.write(value_to_write)
+                    f.close()
+
+                # write ready in the file
+                with open(ready_file_path, 'w') as f:
+                    f.write(ready_message)
+                    f.close()
+
+            sleep(delay)
+
+
+class TestRandomLocationGenerator(threading.Thread):
+    def __init__(self):
+        # Create the thread
+        threading.Thread.__init__(self)
+        return
+
+    def run(self):
+        pastValue = '0'
+        while True:
+            # get a random selection from the list
+            current_sample = random.choice(sample_list)
             # print current_sample
             # file writing in python is in blocking mode to avoid RAW hazard by default it is blocking on Unix
             # The os.write call won't return immediately, it will sleep until the write is complete by default in Unix
-            value_to_write = str(datetime.datetime.now()) + '\t' + str(returnValue) + '\n'
+            value_to_write = str(datetime.datetime.now()) + '\t' + current_sample + '\n'
             print value_to_write
 
-            with open(current_location_file_path, 'a+') as f:
-                f.write(value_to_write)
-                f.close()
+            if current_sample != '0' and current_sample != pastValue:
+                with open(current_location_file_path, 'a+') as f:
+                    f.write(value_to_write)
+                    f.close()
 
-            # write ready in the file
-            with open(ready_file_path, 'w') as f:
-                f.write(ready_message)
-                f.close()
+                # write ready in the file
+                with open(ready_file_path, 'w') as f:
+                    f.write(ready_message)
+                    f.close()
 
-            sleep(0.2)
+                pastValue = current_sample
+            sleep(delay)  # every 2 seconds for debugging now
 
 
 class PollingReady(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
-
-        # logging.basicConfig(level=logging.DEBUG,
-        #                     format='%(name)s: %(message)s',
-        #                    )
-        # Create the thread and run it
-        # thread = Thread(target=self.poll_ready_message_thread())
-        # thread.start()
-        # thread.join()
-        # print "thread finished...exiting"
-        # return
+        return
 
     def run(self):
-        # poll_ready_message_thread():
         while True:
             try:
                 # Check if the file has been written into with Ready
@@ -183,7 +202,7 @@ class PollingReady(threading.Thread):
                                 # try to reconnect
                                 continue
 
-                sleep(1)
+                sleep(delay - delay/2) # decrease the delay by half in polling the ready file
             except KeyboardInterrupt:
                 print "Bye"
                 sys.exit()
@@ -245,38 +264,37 @@ class EchoClient(asyncore.dispatcher):
             self.logger.debug('RECEIVED "%s"', received_message)
 
 
-# class ProtectedZoneHazardHandle(threading.Thread):
-#     chords = [upmBuzzer.DO, upmBuzzer.RE, upmBuzzer.MI, upmBuzzer.FA,
-#               upmBuzzer.SOL, upmBuzzer.LA, upmBuzzer.SI, upmBuzzer.DO,
-#               upmBuzzer.SI]
-#
-#     def __init__(self):
-#         threading.Thread.__init__(self)
-#
-#     def buzz(self):
-#         BUZZER_PIN = 5  # A0
-#         #print (mraa.getVersion())
-#         #buzzer = mraa.Gpio(BUZZER_PIN)  # Digital
-#         buzzer = upmBuzzer.Buzzer(BUZZER_PIN)
-#         #buzzer.dir(mraa.DIR_OUT)
-#         buzzer.setVolume(0.25)
-#         for chord_ind in range(0, 2):
-#             # play each note for 0.1 second
-#             buzzer.playSound(self.chords[chord_ind], 100000)
-#             sleep(0.1)
-#
-#     def run(self):
-#         # Check if the file protected zone hazard is located and updated
-#         while True:
-#             # print 'protected zone checking!'
-#             hazard = os.path.exists(t2_protected_zone_breach_file_path)
-#             if hazard:
-#                 print 'hazard detects --> BEEEEEP'
-#                 self.buzz()
-#                 # remove the file for the next breach
-#                 os.remove(t2_protected_zone_breach_file_path)
-#             # check for the hazard file every 2 seconds
-#             sleep(2)
+class ProtectedZoneHazardHandle(threading.Thread):
+    chords = [upmBuzzer.DO, upmBuzzer.RE, upmBuzzer.MI, upmBuzzer.FA,
+              upmBuzzer.SOL, upmBuzzer.LA, upmBuzzer.SI, upmBuzzer.DO,
+              upmBuzzer.SI]
+
+    def __init__(self):
+        threading.Thread.__init__(self)
+
+    def buzz(self):
+        BUZZER_PIN = 5
+        # print (mraa.getVersion())
+        # buzzer = mraa.Gpio(BUZZER_PIN)  # Digital
+        buzzer = upmBuzzer.Buzzer(BUZZER_PIN)
+        # buzzer.dir(mraa.DIR_OUT)
+        buzzer.setVolume(0.25)
+        for chord_ind in range(0, 2):
+            # play each note for 0.1 second
+            buzzer.playSound(self.chords[chord_ind], 100000)
+            sleep(0.1)
+
+    def run(self):
+        # Check if the file protected zone hazard is located and updated
+        while True:
+            # print 'protected zone checking!'
+            hazard = os.path.exists(protected_zone_breach_file_path)
+            if hazard:
+                print 'hazard detects --> BEEEEEP'
+                self.buzz()
+                # remove the file for the next breach
+                os.remove(protected_zone_breach_file_path)
+            sleep(delay)
 
 
 if __name__ == '__main__':
@@ -284,17 +302,9 @@ if __name__ == '__main__':
                         format='%(name)s: %(message)s',
                         )
 
-    # address = ('localhost', 0)  # let the kernel give us a port
-    # server = EchoServer(address)
-    # ip, port = server.address  # find out what port we were given
-
-    #ip = '172.17.100.218'  # the server ip #salma
-    #ip = '131.179.22.190' #ray
-    ip = server_IP
+    ip = server_IP #'172.17.100.218'  # the server ip #salma
     port = 12345
+    #TestRandomLocationGenerator().start()
     PWM_Receive().start()
     PollingReady().start()
-    #ProtectedZoneHazardHandle().start()
-
-    # client = EchoClient(ip, port, message=open('Ready.txt', 'r').read())
-    # asyncore.loop()
+    ProtectedZoneHazardHandle().start()
