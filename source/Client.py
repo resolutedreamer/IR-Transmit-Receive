@@ -18,10 +18,7 @@ import subprocess
 ## Description:
 # Call this file as follows:
 # python Client.py <serverIP> <tagid>
-# for example: python Client.py '172.17.100.218' '1'
-# Call this file directly in the home folder
-
-
+# for example: python Client.py '192.168.1.2' '1'
 
 # ------Globals-------- #
 # List of possible location
@@ -83,7 +80,7 @@ print "ir_receive_path is: " + ir_receive_path
 print "current_location_file_path is: " + current_location_file_path
 
 
-class PWM_Receive(threading.Thread):
+class IR_Receive(threading.Thread):
     def __init__(self):
         # Create the thread
         threading.Thread.__init__(self)
@@ -301,9 +298,9 @@ if __name__ == '__main__':
                         format='%(name)s: %(message)s',
                         )
 
-    ip = server_IP #'172.17.100.218'  # the server ip #salma
+    ip = server_IP
     port = 12345
     #TestRandomLocationGenerator().start()
-    PWM_Receive().start()
+    IR_Receive().start()
     PollingReady().start()
     ProtectedZoneHazardHandle().start()
