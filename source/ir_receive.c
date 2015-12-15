@@ -19,7 +19,7 @@
 
 //
 /////////////////////////////////////////////////////////////////////////
-#include "pwm_shared.h"
+#include "ir_shared.h"
 
 #define SPARKFUN_GPIO_PIN 49
 #define ARDUINO_GPIO_PIN   8
@@ -27,6 +27,7 @@
 #define SAMPLING_RATE 30000/SCALING_FACTOR
 #define MAX_SAMPLING_RATE 10
 int preamble_length = 5;
+int temp = -1;
 
 #define TOTAL_SAMPLES 3000
 
@@ -86,7 +87,7 @@ int main(int argc, char *argv[]) {
 		printf("Argument(1) Passed In! Preamble Length set to: %d\n", preamble_length);
 	}
 	else {
-		printf("Preamble Length set to default value: %d\n", preamble_length);
+		printf("Argument(1) not passed in!");
 	}
 	if (argc == 3) {
 		preamble_length = atoi(argv[1]);
@@ -96,8 +97,11 @@ int main(int argc, char *argv[]) {
 		printf("Argument(2) Passed In! Location detection threshold set to: %d\n", location_detection_threshold);
 	}
 	else {
-		printf("Location detection threshold set to default value: %d\n", location_detection_threshold);
+		printf("Argument(2) not passed in!");
 	}
+
+	printf("Preamble Length              set to value: %d\n", preamble_length);
+	printf("Location detection threshold set to value: %d\n", location_detection_threshold);
 	
 	// Part 1: Raw Data Sampling
 	// Detect the value received as either 1 or 0

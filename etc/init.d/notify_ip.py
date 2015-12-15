@@ -6,9 +6,11 @@ import threading
 import datetime
 from email.mime.text import MIMEText
 
+# Please Fill in with Correct Information to use
 SMTP_SERVER = "smtp.gmail.com:587"
-SMTP_UNAME = "enerdash@gmail.com"
-SMTP_PASSWD = "enerdash!"
+SMTP_UNAME = "email@email.com"
+SMTP_PASSWD = "incorrect_password"
+
 DEFAULT_NOTIFY_PAUSE = 3600
 DEFAULT_CHECK_INTERVAL = 60
 CELL_SERVICE_DOMAIN = {
@@ -164,14 +166,12 @@ if __name__ == "__main__":
     ip_true_end_index = ip.find(' ')
     ip = ip[:ip_true_end_index]
     msg = "Time is: " + str(datetime.datetime.now()) + '\n' + 'ip is ' + ip
-    email_notification = EmailNotification("resolutedreamer@live.com", msg, lambda x: True, None, notify_pause=60)
-    txtnot = TxtNotification("9512852593", "att", msg,
-           lambda x: True, None, notify_pause=60)
-    txtnot1 = TxtNotification("3108000493", "tmobile", msg,
+	
+    email_notification = EmailNotification("an_email@email.com", msg, lambda x: True, None, notify_pause=60)
+    txtnot = TxtNotification("8001234567", "att", msg,
            lambda x: True, None, notify_pause=60)
     nm.add_notification(email_notification)
     nm.add_notification(txtnot)
-    nm.add_notification(txtnot1)
     
     nm.start_notifications()
     time.sleep(5)

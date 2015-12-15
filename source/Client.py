@@ -1,3 +1,9 @@
+## Client.py
+# Usage:
+# Call this file as follows:
+# python Client.py <serverIP> <tagid>
+# for example: python Client.py '192.168.1.2' '1'
+#
 __author__ = 'salmaelmalaki'
 import asyncore
 import socket
@@ -14,11 +20,6 @@ import mraa
 import pyupm_buzzer as upmBuzzer  # Available on the edison as library
 # from termcolor import colored
 import subprocess
-
-## Description:
-# Call this file as follows:
-# python Client.py <serverIP> <tagid>
-# for example: python Client.py '192.168.1.2' '1'
 
 # ------Globals-------- #
 # List of possible location

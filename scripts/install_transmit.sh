@@ -1,32 +1,32 @@
 #!/bin/sh
 
 #compile the program into the install location
-gcc -lmraa -o pwm_transmit ./source/pwm_transmit.c
-cp pwm_transmit /bin/
-rm pwm_transmit
+gcc -lmraa -o ir_transmit ../source/ir_transmit.c
+cp ir_transmit /bin/
+rm ir_transmit
 
-#create config files for transmitter into /etc/IR/
-cp ./conf/preamble_length.txt /etc/IR/preamble_length.txt
+#create config files for transmitter into /etc/IR_conf/
+cp ./conf/preamble_length.txt /etc/IR_conf/preamble_length.txt
 
 if [ "$#" -eq 1 ]
 then
-	mkdir /etc/IR
-	touch /etc/IR/edisonID.txt
-	echo $1 > /etc/IR/edisonID.txt
+	mkdir /etc/IR_conf
+	touch /etc/IR_conf/edisonID.txt
+	echo $1 > /etc/IR_conf/edisonID.txt
 else
-	cp ./conf/edison_id.txt /etc/IR/edison_id.txt
+	cp ../etc/IR_conf/edison_id.txt /etc/IR_conf/edison_id.txt
 fi
 
 #copy the startup script from here into system startup folder
-cp ./etc/init.d/pwm_transmit.sh /etc/init.d/
+cp ../etc/init.d/ir_transmit.sh /etc/init.d/
 #make the script executable
-chmod 777 /etc/init.d/pwm_transmit.sh
+chmod 777 /etc/init.d/ir_transmit.sh
 #add to startup listing
-update-rc.d pwm_transmit.sh defaults
+update-rc.d ir_transmit.sh defaults
 
 #copy the startup script from here into system startup folder
-cp ./etc/init.d/report_ip.sh /etc/init.d/
-cp ./etc/init.d/notify_ip.py /etc/init.d/
+cp ../etc/init.d/report_ip.sh /etc/init.d/
+cp ../etc/init.d/notify_ip.py /etc/init.d/
 #make the script executable
 chmod 777 /etc/init.d/report_ip.sh
 #add to startup listing

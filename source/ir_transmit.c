@@ -17,7 +17,7 @@
 //	of the Edison anchor node (defaults to 0) 
 //
 /////////////////////////////////////////////////////////////////////////
-#include "pwm_shared.h"
+#include "ir_shared.h"
 
 int preamble_length = 5;
 #define SCALING_FACTOR 5 
@@ -110,7 +110,7 @@ int check_edison_id() {
     unsigned char buf[100];
     int i, n;
     int returnValue = -1;
-    fd = open("/etc/IR/edisonID.txt", O_RDWR | O_NOCTTY);
+    fd = open("/etc/IR_conf/edisonID.txt", O_RDWR | O_NOCTTY);
     if (fd == -1)
     {
         printf("open edisonID.txt failed!\n");
@@ -143,6 +143,7 @@ int main(int argc, char *argv[]) {
 	
 	int transmit_counter = 0;
 	int i = 0;
+	int temp = -1;
 	// GPIO Initialization - Edison has 4 PWM pins
 	
 	pwm1 = mraa_pwm_init(3);
@@ -169,8 +170,10 @@ int main(int argc, char *argv[]) {
 		printf("But we are still going to use 5\n", temp);
 		//preamble_length = temp;
 	}
+	temp = -1;
+	
 	// check file for edisonID
-	int temp = check_edison_id();
+	temp = check_edison_id();
 	if (temp != -1) {
 		printf("Got Edison ID from /etc/IR/edisonID.txt\n");
 		printf("ID I got was %d\n", temp);
@@ -216,12 +219,12 @@ int main(int argc, char *argv[]) {
 		}
 		
 		// Preamble - Signals the Receiver Message Incoming
-		printf("preamble_length = %d, ", preamble_length);
+		printf("Sending preamble_length = %d, ", preamble_length);
 		send_preamble_sequence(preamble_length);
 		
 		// Sending Edison Board ID # - 2 bits, MSB then LSB
+		printf("EdisonID: %d - ", edisonID);
 		switch (edisonID) {
-			printf("EdisonID: %d - ", edisonID);
 			case 0:
 				send_low_bit();		// Send lsb bit 0 = LOW
 				send_low_bit();		// Send msb bit 1 = LOW
@@ -250,7 +253,7 @@ int main(int argc, char *argv[]) {
 		// pwm3,DUTY = 10 = long-short/short-long = 20-5/5-20
 		// pwm4,DUTY = 11 = long-short/long-short = 20-5/20-5
 		
-		printf(", EmitterIDs 0-3");
+		printf(", EmitterIDs 0-3\n");
 		// First Bit
 		mraa_pwm_write(pwm1,DUTY);
 		mraa_pwm_write(pwm2,DUTY);
