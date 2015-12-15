@@ -1,12 +1,11 @@
 IR Transmit/Receive for Intel Edison
 ======
-**Software Name** is a software for things. Short description here.
+**IR Transmit/Receive** is a major component of a UCLA EE 202C Project - SHCP Secure Hospital Contamination Prevention. This software provides an IR localization component for a secure hospital system to track patients, physicians, and visitors.
 
 #### Screenshot
-![Screenshot software](http://url/screenshot-software.png "screenshot software")
 
 ## Usage
-* see [INSTRUCTIONS](https://github.com/resolutedreamer/IR-Transmit-Receive/blob/master/LICENSE.md) file
+* see [INSTRUCTIONS](https://github.com/resolutedreamer/IR-Transmit-Receive/blob/master/INSTRUCTIONS.md) file
 
 ## Contributors
 

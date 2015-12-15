@@ -2,7 +2,7 @@ Instructions for IR Transmit/Receive for Intel Edison
 ======
 0. Prerequisites
 
-1. Clone this repository to your local harddrive: `git clone https://github.com/username/projectname.git`
+1. Clone this repository to your Intel Edison: `git clone https://github.com/username/projectname.git`
 
 IR Transmitter
 ======
@@ -41,3 +41,6 @@ number from 0-3 which will determine which of the tags this is.
 Uninstallation
 ======
 2d. Run uninstall.sh to remove all these files from the Edison.
+
+More information about using these files can be found at:
+https://drive.google.com/open?id=0B0kC2pgiScfENDJkSlVCUFFhbnc
