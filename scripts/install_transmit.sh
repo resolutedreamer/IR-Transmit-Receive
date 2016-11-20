@@ -14,19 +14,19 @@ then
 	touch /etc/IR_conf/edisonID.txt
 	echo $1 > /etc/IR_conf/edisonID.txt
 else
-	cp ../etc/IR_conf/edison_id.txt /etc/IR_conf/edison_id.txt
+	cp ./etc/IR_conf/edison_id.txt /etc/IR_conf/edison_id.txt
 fi
 
 #copy the startup script from here into system startup folder
-cp ../etc/init.d/ir_transmit.sh /etc/init.d/
+cp ./etc/init.d/ir_transmit.sh /etc/init.d/
 #make the script executable
 chmod 777 /etc/init.d/ir_transmit.sh
 #add to startup listing
 update-rc.d ir_transmit.sh defaults
 
 #copy the startup script from here into system startup folder
-cp ../etc/init.d/report_ip.sh /etc/init.d/
-cp ../etc/init.d/notify_ip.py /etc/init.d/
+cp ./etc/init.d/report_ip.sh /etc/init.d/
+cp ./etc/init.d/notify_ip.py /etc/init.d/
 #make the script executable
 chmod 777 /etc/init.d/report_ip.sh
 #add to startup listing
