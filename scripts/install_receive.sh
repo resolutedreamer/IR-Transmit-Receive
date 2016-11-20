@@ -1,13 +1,13 @@
 #!/bin/sh
 
 #compile the program
-gcc -lmraa -o ir_receive ../source/ir_receive.c
+gcc -lmraa -o ir_receive ../src/ir_receive.c
 #copy into install location and remove extra copy
 cp ir_receive /bin/
 rm ir_receive
 
 #copy Client.py into bin
-cp ../source/Client.py /bin/
+cp ../src/Client.py /bin/
 
 #copy config files for receiver into /etc/IR_conf/
 mkdir /etc/IR_conf

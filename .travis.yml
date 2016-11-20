@@ -2,7 +2,6 @@ language: c
 compiler:
   - clang
   - gcc
-# need to install mraa
 sudo: required
 before_install:
   - "sudo add-apt-repository ppa:mraa/mraa -y"

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #compile the program into the install location
-gcc -lmraa -o ir_transmit ../source/ir_transmit.c
+gcc -lmraa -o ir_transmit ../src/ir_transmit.c
 cp ir_transmit /bin/
 rm ir_transmit
 
