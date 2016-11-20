@@ -3,6 +3,7 @@ compiler:
   - clang
   - gcc
 # need to install mraa
+sudo: required
 install:
   - "npm install mraa"
 script:
