@@ -1,5 +1,6 @@
 IR Transmit/Receive for Intel Edison
 ======
+** Embedded Software for SHCP (Secure Hospital Contamination Prevention) system
 **IR Transmit/Receive** contains the software necessary to configure the Intel Edison for use in the SHCP Secure Hospital Contamination Prevention system. This software configures Intel Edison devices for IR localization for a secure hospital system to track patients, physicians, and visitors. Each Edison can be configured as either a transmitter or receiver.
 
 #### Screenshot
@@ -20,13 +21,13 @@ IR Transmit/Receive for Intel Edison
 *  [libmraa](https://github.com/intel-iot-devkit/mraa)
 
 ## License 
-* see [LICENSE](https://github.com/username/sw-name/blob/master/LICENSE.md) file
+* This project is licensed under the Apache License - see the [LICENSE](https://github.com/resolutedreamer/IR-Transmit-Receive/blob/master/LICENSE) file for details
 
 ## Version 
 * Version 1.0
 
 ## Contact
 #### Anthony Nguyen
-* Homepage: www.resolutedreamer.com
+* Homepage: [http://www.resolutedreamer.com](http://www.resolutedreamer.com)
 
 Last Updated 2015/12/14
