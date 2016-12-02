@@ -10,5 +10,5 @@ before_install:
   - "sudo apt-get -qq update"
   - "sudo apt-get install libmraa1 libmraa-dev mraa-tools"
 script:
-  - "cd ./source"
+  - "cd src"
   - "make"
