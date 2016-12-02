@@ -8,7 +8,7 @@ sudo: required
 before_install:
   - "sudo add-apt-repository ppa:mraa/mraa -y"
   - "sudo apt-get -qq update"
-  - "sudo apt-get install libmraa1 libmraa-dev mraa-tools python-mraa python3-mraa"
+  - "sudo apt-get install libmraa1 libmraa-dev mraa-tools"
 script:
   - "cd ./source"
   - "make"
