@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "mraa.h"
 #include <mraa/pwm.h>
 #include <mraa/gpio.h>
 #include <sched.h>
