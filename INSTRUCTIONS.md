@@ -2,7 +2,7 @@ Instructions for IR Transmit/Receive for Intel Edison
 ======
 0. Prerequisites
 
-1. Clone this repository to your Intel Edison: `git clone https://github.com/username/projectname.git`
+1. Clone this repository to your Intel Edison: `git clone https://github.com/resolutedreamer/IR-Transmit-Receive.git`
 
 IR Transmitter
 ======
